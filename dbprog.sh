@@ -21,6 +21,19 @@ echo "Akkor induljunk!"
 #sudo apt-get install postgresql
 else
 echo "Akkor még nem telepítünk!"
+listen
+fi
+}
+
+#Figyeli mit szeretnénk csinálni
+listen() {
+read -p "Várom a parancsot!" ans
+if [[ "$ans" == "add-product" ]]
+then
+echo "Product added!"
+listen
+else
+listen
 fi
 }
 
