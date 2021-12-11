@@ -11,6 +11,15 @@ else
 echo "PostgreSql nem aktív!"
 fi
 
+#Help funkció
+help() {
+    echo "Kilépés: ctrl+c
+          Parancsok: add-product: Termék hozzáadása
+                     del-product: Termék törlése
+                     back: Visszalépés a főmenübe"
+    listen
+}
+
 #Telepítés indító funkció
 setup() {
 read -p  "Üdv, kezdődhet a telepítés?" ans
@@ -25,14 +34,56 @@ listen
 fi
 }
 
+#Innentől a törlések
+del-product() {
+    read -p "Mi alapján töröljek?" iddel
+    if [[ "$iddel" == "barcode" ]]
+    then
+    barDel
+    elif [[ "$iddel" == "name" ]]
+    then
+    read -p "Termék neve:" name
+    echo "$name törölve!"
+    del-product
+    elif [[ "$iddel" == "id" ]]
+    then
+    read -p "Termék azonosítója:" azon
+    echo "$azon termék törölve!"
+    del-product
+    elif [[ "$iddel" == "back" ]]
+    then
+    listen
+    fi
+    }
+
+barDel() {
+read -p "Vonalkód:" barc
+echo "Termék $barc törölve!"
+del-product
+}
+
+#Hozzáadás
+add-product() {
+    read -p "Termék neve:" name
+    read -p "Vonalkód:" barcode
+echo "$name $barcode hozzáadva!"
+listen
+}
+
 #Figyeli mit szeretnénk csinálni
 listen() {
 read -p "Várom a parancsot!" ans
 if [[ "$ans" == "add-product" ]]
 then
-echo "Product added!"
-listen
+add-product
+elif [[ "$ans" == "-help" ]]
+then
+help
+elif [[ "$ans" == "del-product" ]]
+then
+del-product
 else
+echo "Rossz parancs, -help a segítség megjelenítése."
 listen
 fi
 }
