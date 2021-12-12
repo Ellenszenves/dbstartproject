@@ -1,6 +1,7 @@
 #!/bin/bash
 #PostgreSQL: pg_hba.conf file-ba elsőként felsorolni: host all postgres 127.0.0.1/32 trust
 #postgresql felhasználóval beléptem, adtam neki postgresql jelszót.
+#user=$(zenity --entry --text 'Please enter the username:') || exit 1
 echo "Bolti adatbázis project by Erdélyi Tamás. 2021"
 #Kiszedjük változóba a postgresql státuszt és megvizsgáljuk fut e.
 posact="$(systemctl status postgresql | grep -o "active")"
