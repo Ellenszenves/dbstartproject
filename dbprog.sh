@@ -12,23 +12,32 @@ else
 echo "PostgreSql nem aktív!"
 fi
 
+#Postgres felhasznaló létrehozása
+createrole() {
+psql -d testdb << EOF
+CREATE ROLE testdb WITH SUPERUSER CREATEDB CREATEROLE LOGIN ENCRYPTED PASSWORD 'testdb';
+EOF
+echo "testdb felhasználó elkészítve!"
+listen
+}
+
 #Táblák létrehozása, hibakereséssel.
 create-tables() {
-    user_id="$(psql -qt postgres -d testdb -c "
-SELECT category_id FROM public."categories" WHERE category_name = 'dummy'"
+user_id="$(psql -qt testdb -d testdb -c "
+SELECT category_id FROM categories WHERE category_name = 'dummy'"
 )"
 if [ -n "$user_id" ]
 then
 echo "A tábla már létezik: Kategóriák"
 listen
 else
-psql -U postgres -d testdb -c "CREATE TABLE categories (
+psql -U testdb -d testdb -c "CREATE TABLE categories (
     category_id SERIAL UNIQUE,
     category_name character varying(15) NOT NULL,
     description text,
     picture bytea
 );
-INSERT INTO public."categories" (category_name, description) VALUES (dummy, This is just a dummy product!) ;"
+INSERT INTO categories (category_name, description) VALUES ('dummy', 'dummy') ;"
     echo "Tábla létrehozva: Kategóriák"
     listen
 fi
@@ -37,7 +46,9 @@ fi
 #Help funkció
 help() {
     echo "Kilépés: ctrl+c
-          Parancsok: add-product: Termék hozzáadása
+          Parancsok: createrole: testdb felhasználó létrehozása
+                     dbsetup: Adatbázis létrehozása
+                     add-product: Termék hozzáadása
                      del-product: Termék törlése
                      back: Visszalépés a főmenübe
                      create-tables: Létrehozza a szükséges táblákat."
@@ -94,6 +105,13 @@ echo "$name $barcode hozzáadva!"
 listen
 }
 
+#Adatbázis létrehozás itt épp testDB néven
+dbsetup() {
+psql postgres -c "CREATE DATABASE testDB";
+echo "Adatbázis létrehozva!"
+listen
+}
+
 #Figyeli mit szeretnénk csinálni
 listen() {
 read -p "Várom a parancsot!" ans
@@ -109,14 +127,16 @@ del-product
 elif [[ "$ans" == "create-tables" ]]
 then
 create-tables
+elif [[ "$ans" == "dbsetup" ]]
+then
+dbsetup
+elif [[ "$ans" == "createrole" ]]
+then
+createrole
 else
 echo "Rossz parancs, -help a segítség megjelenítése."
 listen
 fi
 }
 
-#Adatbázis létrehozás itt épp testDB néven
-dbsetup() {
-psql postgres -c "CREATE DATABASE testDB";
-}
 setup
