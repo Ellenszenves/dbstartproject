@@ -12,12 +12,35 @@ else
 echo "PostgreSql nem aktív!"
 fi
 
+#Táblák létrehozása, hibakereséssel.
+create-tables() {
+    user_id="$(psql -qt postgres -d testdb -c "
+SELECT category_id FROM public."categories" WHERE category_name = 'dummy'"
+)"
+if [ -n "$user_id" ]
+then
+echo "A tábla már létezik: Kategóriák"
+listen
+else
+psql -U postgres -d testdb -c "CREATE TABLE categories (
+    category_id SERIAL UNIQUE,
+    category_name character varying(15) NOT NULL,
+    description text,
+    picture bytea
+);
+INSERT INTO public."categories" (category_name, description) VALUES (dummy, This is just a dummy product!) ;"
+    echo "Tábla létrehozva: Kategóriák"
+    listen
+fi
+}
+
 #Help funkció
 help() {
     echo "Kilépés: ctrl+c
           Parancsok: add-product: Termék hozzáadása
                      del-product: Termék törlése
-                     back: Visszalépés a főmenübe"
+                     back: Visszalépés a főmenübe
+                     create-tables: Létrehozza a szükséges táblákat."
     listen
 }
 
@@ -83,6 +106,9 @@ help
 elif [[ "$ans" == "del-product" ]]
 then
 del-product
+elif [[ "$ans" == "create-tables" ]]
+then
+create-tables
 else
 echo "Rossz parancs, -help a segítség megjelenítése."
 listen
