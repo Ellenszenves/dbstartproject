@@ -12,6 +12,15 @@ else
 echo "PostgreSql nem aktív!"
 fi
 
+zenity() {
+zenity --list \
+  --title="Válassza ki a megjelenítendő hibajegyeket" \
+  --column="Hiba száma" --column="Súlyosság" --column="Leírás" \
+    992383 Normal "GtkTreeView crashes on multiple selections" \
+    293823 High "GNOME Dictionary does not handle proxy" \
+    393823 Critical "Menu editing does not work in GNOME 2.0"
+}
+
 #Postgres felhasznaló létrehozása
 createrole() {
 psql -d testdb << EOF
@@ -74,7 +83,9 @@ del-product() {
     read -p "Mi alapján töröljek?" iddel
     if [[ "$iddel" == "barcode" ]]
     then
-    barDel
+    read -p "Vonalkód:" barc
+    echo "Termék $barc törölve!"
+    del-product
     elif [[ "$iddel" == "name" ]]
     then
     read -p "Termék neve:" name
@@ -90,12 +101,6 @@ del-product() {
     listen
     fi
     }
-
-barDel() {
-read -p "Vonalkód:" barc
-echo "Termék $barc törölve!"
-del-product
-}
 
 #Hozzáadás
 add-product() {
@@ -115,28 +120,11 @@ listen
 #Figyeli mit szeretnénk csinálni
 listen() {
 read -p "Várom a parancsot!" ans
-if [[ "$ans" == "add-product" ]]
+$ans
+if [[ $? != "0" ]]
 then
-add-product
-elif [[ "$ans" == "-help" ]]
-then
-help
-elif [[ "$ans" == "del-product" ]]
-then
-del-product
-elif [[ "$ans" == "create-tables" ]]
-then
-create-tables
-elif [[ "$ans" == "dbsetup" ]]
-then
-dbsetup
-elif [[ "$ans" == "createrole" ]]
-then
-createrole
-else
-echo "Rossz parancs, -help a segítség megjelenítése."
+echo "Rossz parancs, help a segítség megjelenítése."
 listen
 fi
 }
-
 setup
