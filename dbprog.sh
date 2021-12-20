@@ -12,70 +12,39 @@ else
 echo "PostgreSql nem aktív!"
 fi
 
-zenity() {
-zenity --list \
-  --title="Válassza ki a megjelenítendő hibajegyeket" \
-  --column="Hiba száma" --column="Súlyosság" --column="Leírás" \
-    992383 Normal "GtkTreeView crashes on multiple selections" \
-    293823 High "GNOME Dictionary does not handle proxy" \
-    393823 Critical "Menu editing does not work in GNOME 2.0"
-}
-
-#Postgres felhasznaló létrehozása
-createrole() {
-psql -d testdb << EOF
-CREATE ROLE testdb WITH SUPERUSER CREATEDB CREATEROLE LOGIN ENCRYPTED PASSWORD 'testdb';
-EOF
-echo "testdb felhasználó elkészítve!"
-listen
-}
-
-#Táblák létrehozása, hibakereséssel.
-create-tables() {
-user_id="$(psql -qt testdb -d testdb -c "
-SELECT category_id FROM categories WHERE category_name = 'dummy'"
-)"
-if [ -n "$user_id" ]
-then
-echo "A tábla már létezik: Kategóriák"
-listen
-else
-psql -U testdb -d testdb -c "CREATE TABLE categories (
-    category_id SERIAL UNIQUE,
-    category_name character varying(15) NOT NULL,
-    description text,
-    picture bytea
-);
-INSERT INTO categories (category_name, description) VALUES ('dummy', 'dummy') ;"
-    echo "Tábla létrehozva: Kategóriák"
-    listen
-fi
-}
-
 #Help funkció
 help() {
-    echo "Kilépés: ctrl+c
-          Parancsok: createrole: testdb felhasználó létrehozása
-                     dbsetup: Adatbázis létrehozása
-                     add-product: Termék hozzáadása
-                     del-product: Termék törlése
-                     back: Visszalépés a főmenübe
-                     create-tables: Létrehozza a szükséges táblákat."
+    zenity --info \
+        --text="Kilépés: ctrl+c\n
+          Parancsok: createrole: testdb felhasználó létrehozása\n
+          dbsetup: Adatbázis létrehozása\n
+          add-product: Termék hozzáadása\n
+          del-product: Termék törlése\n
+          back: Visszalépés a főmenübe\n
+          create-tables: Létrehozza a szükséges táblákat." --width=500 --height=500
     listen
 }
 
 #Telepítés indító funkció
 setup() {
-read -p  "Üdv, kezdődhet a telepítés?" ans
-if [[ "$ans" == "igen" ]]
-then
-echo "Akkor induljunk!"
-#sudo apt-get update
-#sudo apt-get install postgresql
-else
-echo "Akkor még nem telepítünk!"
-listen
-fi
+    zenity --text-info \
+            --title="Setup" \
+
+    case $? in
+    0)
+    echo "Akkor induljunk!"
+    help
+    #sudo apt-get update
+    #sudo apt-get install postgresql postgresql-contrib
+    ;;
+    1)
+    echo "Akkor még nem telepítünk"
+    listen
+    ;;
+    -1)
+    echo "Váratlan hiba történt!"
+    ;;
+    esac
 }
 
 #Innentől a törlések
@@ -112,14 +81,38 @@ listen
 
 #Adatbázis létrehozás itt épp testDB néven
 dbsetup() {
-psql postgres -c "CREATE DATABASE testDB";
+sudo su - postgres
+psql postgres -c "CREATE DATABASE testDB;"
 echo "Adatbázis létrehozva!"
+#Postgres felhasznaló létrehozása testdb néven
+psql -d testdb << EOF
+CREATE ROLE testdb WITH SUPERUSER CREATEDB CREATEROLE LOGIN ENCRYPTED PASSWORD 'testdb';
+EOF
+echo "testdb felhasználó elkészítve!"
+#Táblák létrehozása, hibakereséssel.
+user_id="$(psql -qt testdb -d testdb -c "
+SELECT category_id FROM categories WHERE category_name = 'dummy'"
+)"
+if [ -n "$user_id" ]
+then
+echo "A tábla már létezik: Kategóriák"
 listen
+else
+psql -U testdb -d testdb -c "CREATE TABLE categories (
+    category_id SERIAL UNIQUE,
+    category_name character varying(15) NOT NULL,
+    description text,
+    picture bytea
+);
+INSERT INTO categories (category_name, description) VALUES ('dummy', 'dummy') ;"
+    echo "Tábla létrehozva: Kategóriák"
+    listen
+fi
 }
 
 #Figyeli mit szeretnénk csinálni
 listen() {
-read -p "Várom a parancsot!" ans
+ans=$(zenity --entry --title "Menü" --text "Várom a parancsot")
 $ans
 if [[ $? != "0" ]]
 then
