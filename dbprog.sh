@@ -12,12 +12,21 @@ else
 echo "PostgreSql nem aktív!"
 fi
 
+#Felsorolás funkció
+list() {
+    azez=$(psql -U testdb -d testdb -c "SELECT * FROM public."categories"")
+    zenity --info \
+        --text="$azez"
+    listen
+}
+
 #Help funkció
 help() {
     zenity --info \
         --text="Kilépés: ctrl+c\n
           Parancsok: createrole: testdb felhasználó létrehozása\n
           dbsetup: Adatbázis létrehozása\n
+          list: Termékek felsorolása\n
           add-product: Termék hozzáadása\n
           del-product: Termék törlése\n
           back: Visszalépés a főmenübe\n
@@ -29,6 +38,7 @@ help() {
 setup() {
     zenity --text-info \
             --title="Setup" \
+            --filename=licence.txt
 
     case $? in
     0)
@@ -81,14 +91,14 @@ listen
 
 #Adatbázis létrehozás itt épp testDB néven
 dbsetup() {
-sudo su - postgres
-psql postgres -c "CREATE DATABASE testDB;"
-echo "Adatbázis létrehozva!"
+#sudo su - postgres
+#psql postgres -c "CREATE DATABASE testDB;"
+#echo "Adatbázis létrehozva!"
 #Postgres felhasznaló létrehozása testdb néven
-psql -d testdb << EOF
-CREATE ROLE testdb WITH SUPERUSER CREATEDB CREATEROLE LOGIN ENCRYPTED PASSWORD 'testdb';
-EOF
-echo "testdb felhasználó elkészítve!"
+#psql -d testdb << EOF
+#CREATE ROLE testdb WITH SUPERUSER CREATEDB CREATEROLE LOGIN ENCRYPTED PASSWORD 'testdb';
+#EOF
+#echo "testdb felhasználó elkészítve!"
 #Táblák létrehozása, hibakereséssel.
 user_id="$(psql -qt testdb -d testdb -c "
 SELECT category_id FROM categories WHERE category_name = 'dummy'"
@@ -112,12 +122,25 @@ fi
 
 #Figyeli mit szeretnénk csinálni
 listen() {
-ans=$(zenity --entry --title "Menü" --text "Várom a parancsot")
-$ans
-if [[ $? != "0" ]]
+ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció" 1 'Felhasználó létrehozása' 2 'Adatbázis létrehozása' 3 'Termékek felsorolása' 4 'Termék hozzáadása' 5 'Termék törlése' 6 'Táblák létrehozása')
+if [ "$ans" == "Termékek felsorolása" ]
 then
-echo "Rossz parancs, help a segítség megjelenítése."
+list &
 listen
+elif [ "$ans" == "Felhasználó létrehozása" ]
+then
+listen
+elif [ "$ans" == "Adatbázis létrehozása" ]
+then
+dbsetup
+elif [ "$ans" == "Termék hozzáadása" ]
+then
+add-product
+elif [ "$ans" == "Termék törlése" ]
+then
+del-product
+else
+exit
 fi
 }
 setup
