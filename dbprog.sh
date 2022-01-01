@@ -2,7 +2,7 @@
 #PostgreSQL: pg_hba.conf file-ba elsőként felsorolni: host all postgres 127.0.0.1/32 trust
 #postgresql felhasználóval beléptem, adtam neki postgresql jelszót.
 #user=$(zenity --entry --text 'Please enter the username:') || exit 1
-echo "Bolti adatbázis project by Erdélyi Tamás. 2021"
+echo "Bolti adatbázis project by Erdélyi Tamás. 2022"
 #Kiszedjük változóba a postgresql státuszt és megvizsgáljuk fut e.
 posact="$(systemctl status postgresql | grep -o "active")"
 if [ "$posact" == "active" ]
@@ -15,8 +15,12 @@ fi
 #Felsorolás funkció
 list() {
     azez=$(psql -U testdb -d testdb -c "SELECT * FROM public."categories"")
+    while IFS='|' read -r id nev desc
+    do
+    echo "$nev"
+    done <<< "$azez"
     zenity --info \
-        --text="$azez"
+        --text="$nev" --width=500 --height=500
     listen
 }
 
@@ -83,10 +87,43 @@ del-product() {
 
 #Hozzáadás
 add-product() {
-    read -p "Termék neve:" name
-    read -p "Vonalkód:" barcode
-echo "$name $barcode hozzáadva!"
+    name=$(zenity --entry \
+    --title="Új termék" \
+    --text="Termék neve" \
+    --entry-text="termék")
+    barcode=$(zenity --entry \
+    --title="Új termék" \
+    --text="Vonalkód" \
+    --entry-text="0000")
+    echo $name, $barcode
 listen
+}
+
+#Kategória hozzáadás
+add-category() {
+    name=$(zenity --entry \
+    --title="Új kategória" \
+    --text="Kategória neve" \
+    --entry-text="kategória")
+    descr=$(zenity --entry \
+    --title="Új kategória" \
+    --text="Kategória leírása" \
+    --entry-text="leírás")
+    if [ -n "$name" ]
+    then
+    psql -U testdb -d testdb -c "INSERT INTO categories (category_name, description) VALUES ('$name', '$descr') ;"
+    zenity --info \
+    --text="Kategória létrehozva: $name, $descr!"
+    else
+    zenity --info \
+    --text="Üres kategória nem hozható létre!"
+    fi
+    listen
+}
+
+#Kategória törlése
+del-category() {
+
 }
 
 #Adatbázis létrehozás itt épp testDB néven
@@ -122,7 +159,7 @@ fi
 
 #Figyeli mit szeretnénk csinálni
 listen() {
-ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció" 1 'Felhasználó létrehozása' 2 'Adatbázis létrehozása' 3 'Termékek felsorolása' 4 'Termék hozzáadása' 5 'Termék törlése' 6 'Táblák létrehozása')
+ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció" 1 'Felhasználó létrehozása' 2 'Adatbázis létrehozása' 3 'Termékek felsorolása' 4 'Termék hozzáadása' 5 'Termék törlése' 6 'Táblák létrehozása' 7 'Kategória hozzáadása')
 if [ "$ans" == "Termékek felsorolása" ]
 then
 list &
@@ -136,6 +173,9 @@ dbsetup
 elif [ "$ans" == "Termék hozzáadása" ]
 then
 add-product
+elif [ "$ans" == "Kategória hozzáadása" ]
+then
+add-category
 elif [ "$ans" == "Termék törlése" ]
 then
 del-product
