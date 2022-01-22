@@ -1,7 +1,16 @@
+HU:
+Ez a kis project gyakorlásképp készül, szóval ha nem működik benne semmi, akkor
+sem kell meglepődni. Mivel shell scriptet és SQL-t szeretnék gyakorolni, így ez
+a kombináció kerekedett ki belőle.
+Kezdetleges grafikai felületet próbálok összehozni Zenity segítségével, ami elérhető
+Linuxon. Az adatbázis PostgreSQL-en fut, amit Docker segítségével konténerben futtatok.
+Miután sikerült egy minimális funkcionalitást megalkotni, elkezdem véglegesíteni a telepítést.
+Későbbi tervben van, hogy az adatbázist bizonyos időközönként automatikusan mentem.
+
+EN:
 This project is just for my learning, if something goes wrong, its not my fault.
 I want to make something like the Northwind traders database with some GUI in the future.
 A lot of function is only in there for testing, not for the endproduct.
 The program using Docker to install PostgreSQL database.
 Platform: Linux/Ubuntu
 Language: HU/EN
-Help command: -help

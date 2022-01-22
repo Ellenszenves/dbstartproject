@@ -7,9 +7,6 @@ services:
       - type: volume
         source: db_data
         target: /var/lib/postgres/data
-      - type: bind
-        source: /home/ellenszenves/starter.sql
-        target: /docker-entrypoint-initdb.d/starter.sql
     restart: always
     environment:
       - POSTGRES_USER=test

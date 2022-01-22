@@ -21,6 +21,9 @@ fi
 
 #Felsorolás funkció
 list() {
+    unset myarray
+    unset idarray
+    unset data
     ezlenne=""
     idvar=""
     azez=$($execute "SELECT * FROM categories")
@@ -36,9 +39,14 @@ list() {
     data+=( "${idarray[$i]}" "${myarray[$i]}" )
     done
     zenity --list --title="Kategóriák" --column="ID" --column="Név" "${data[@]}"
+    listen
 }
 
 list_products() {
+    unset myarray
+    unset idarray
+    unset data
+    echo ${data[0]}
     ezlenne=""
     idvar=""
     azez=$($execute "SELECT product_name, unit_price FROM products")
@@ -181,8 +189,7 @@ ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció
 8 'Kategóriák felsorolása' --width=500 --height=500)
 if [ "$ans" == "Kategóriák felsorolása" ]
 then
-list &
-listen
+list
 elif [ "$ans" == "Felhasználó létrehozása" ]
 then
 listen
