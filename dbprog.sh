@@ -1,6 +1,7 @@
 #!/bin/bash
 db_name='shop'
 db_user='test'
+execute='docker exec dbstartproject_db_1 psql -t -U test -d shop -c'
 echo "Bolti adatbázis project by Erdélyi Tamás. 2022"
 #Kiszedjük változóba a docker státuszt és megvizsgáljuk fut e.
 posact="$(systemctl status docker | grep -o "active")"
@@ -13,16 +14,21 @@ fi
 
 #Felsorolás funkció
 list() {
-    #kilistázzuk a kategóriákat
-    azez=$(docker exec dbstartproject_db_1 psql -U $db_user -d $db_name -c "SELECT * FROM categories")
-    #itt pedig egy változóba listázzuk a neveket
-    catnames=$(while IFS='|' read -r id nev desc
+    ezlenne=""
+    idvar=""
+    azez=$($execute "SELECT * FROM categories")
+    echo $azez
+    while IFS='|' read -r id nev description
     do
-    echo "$nev"
-    done <<< "$azez")
-    #végül kiíratjuk zenityvel
-    zenity --info \
-        --text="$catnames" --width=500 --height=500
+        ezlenne+="$nev "
+        idvar+="$id "
+    done <<< "$azez"
+    read -a myarray <<< $ezlenne
+    read -a idarray <<< $idvar
+    for (( i=0; i<${#idarray[*]}; ++i)); do
+    data+=( "${idarray[$i]}" "${myarray[$i]}" )
+    done
+    zenity --list --title="Kategóriák" --column="ID" --column="Név" "${data[@]}"
 }
 
 #Help funkció
@@ -53,6 +59,7 @@ setup() {
     #sudo apt-get install -y docker
     #sudo apt-get install -y docker-compose
     #sudo usermod -aG docker $USER
+    #docker-compose up -d
     ;;
     1)
     echo "Akkor még nem telepítünk"
@@ -88,19 +95,6 @@ del-product() {
     fi
     }
 
-#Hozzáadás
-add-product() {
-    name=$(zenity --entry \
-    --title="Új termék" \
-    --text="Termék neve" \
-    --entry-text="termék")
-    barcode=$(zenity --entry \
-    --title="Új termék" \
-    --text="Vonalkód" \
-    --entry-text="0000")
-    echo $name, $barcode
-listen
-}
 
 #Kategória hozzáadás
 add-category() {
@@ -114,12 +108,32 @@ add-category() {
     --entry-text="leírás")
     if [ -n "$name" ]
     then
-    docker exec dbstartproject_db_1 psql -U $db_user -d $db_name -c "INSERT INTO categories (category_name, description) VALUES ('$name', '$descr') ;"
+    $execute "INSERT INTO categories (category_name, description) VALUES ('$name', '$descr') ;"
     zenity --info \
     --text="Kategória létrehozva: $name, $descr!"
     else
     zenity --info \
     --text="Üres kategória nem hozható létre!"
+    fi
+    listen
+}
+
+add-product() {
+    add=$(zenity --forms --title="Termék hozzáadása" \
+    --add-entry="Termék neve" \
+    --add-entry="Termék kategóriája" \
+    --add-entry="Termék ára")
+    if [ -n "$add" ]
+    then
+    while IFS='|' read -r name cat price
+    do
+    $execute "INSERT INTO products (product_name, category_id, unit_price) VALUES ('$name', '$cat', '$price') ;"
+    done <<< "$add"
+    zenity --info \
+    --text="Termék létrehozva: $name!"
+    else
+    zenity --info \
+    --text="Üres termék nem hozható létre!"
     fi
     listen
 }

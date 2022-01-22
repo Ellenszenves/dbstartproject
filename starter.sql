@@ -4,7 +4,7 @@
 
 CREATE TABLE categories (
     category_id serial,
-    category_name character varying(15) NOT NULL,
+    category_name character varying(15) NOT NULL UNIQUE,
     description text
 );
 
@@ -126,7 +126,7 @@ CREATE TABLE orders (
 --
 
 CREATE TABLE products (
-    product_id smallint NOT NULL,
+    product_id serial,
     product_name character varying(40) NOT NULL,
     supplier_id smallint,
     category_id smallint,
@@ -135,7 +135,7 @@ CREATE TABLE products (
     units_in_stock smallint,
     units_on_order smallint,
     reorder_level smallint,
-    discontinued integer NOT NULL
+    discontinued integer DEFAULT '0'
 );
 
 
