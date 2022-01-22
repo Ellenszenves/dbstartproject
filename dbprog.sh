@@ -4,12 +4,19 @@ db_user='test'
 execute='docker exec dbstartproject_db_1 psql -t -U test -d shop -c'
 echo "Bolti adatbázis project by Erdélyi Tamás. 2022"
 #Kiszedjük változóba a docker státuszt és megvizsgáljuk fut e.
-posact="$(systemctl status docker | grep -o "active")"
-if [ "$posact" == "active" ]
+docact="$(systemctl status docker | grep -o "active")"
+if [ "$docact" == "active" ]
 then
-echo "Docker $posact"
+echo "Docker $docact"
 else
 echo "Docker nem aktív!"
+fi
+posact="$(docker ps | grep -o "postgres")"
+if [ "$posact" == "postgres" ]
+then
+echo "PostgreSQL aktív"
+else
+echo "A PostgreSQL nem aktív!"
 fi
 
 #Felsorolás funkció
@@ -29,6 +36,56 @@ list() {
     data+=( "${idarray[$i]}" "${myarray[$i]}" )
     done
     zenity --list --title="Kategóriák" --column="ID" --column="Név" "${data[@]}"
+}
+
+list_products() {
+    ezlenne=""
+    idvar=""
+    azez=$($execute "SELECT product_name, unit_price FROM products")
+    echo $azez
+    while IFS='|' read -r id nev description
+    do
+        ezlenne+="$nev "
+        idvar+="$id "
+    done <<< "$azez"
+    read -a myarray <<< $ezlenne
+    read -a idarray <<< $idvar
+    for (( i=0; i<${#idarray[*]}; ++i)); do
+    data+=( "${idarray[$i]}" "${myarray[$i]}" )
+    done
+    select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" "${data[@]}")
+    if [ -n "$select" ]
+    then
+    inform=$($execute "SELECT * FROM products WHERE product_name='$select'";)
+    zenity --info \
+    --text="$inform"
+    fi
+    listen
+}
+
+del_product() {
+    ezlenne=""
+    idvar=""
+    azez=$($execute "SELECT product_name, unit_price FROM products")
+    echo $azez
+    while IFS='|' read -r id nev description
+    do
+        ezlenne+="$nev "
+        idvar+="$id "
+    done <<< "$azez"
+    read -a myarray <<< $ezlenne
+    read -a idarray <<< $idvar
+    for (( i=0; i<${#idarray[*]}; ++i)); do
+    data+=( "${idarray[$i]}" "${myarray[$i]}" )
+    done
+    select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" "${data[@]}")
+    if [ -n "$select" ]
+    then
+    inform=$($execute "DELETE FROM products WHERE product_name='$select'";)
+    zenity --info \
+    --text="$select törölve!"
+    fi
+    listen
 }
 
 #Help funkció
@@ -54,7 +111,7 @@ setup() {
     case $? in
     0)
     echo "Akkor induljunk!"
-    help
+    listen
     #sudo apt-get update
     #sudo apt-get install -y docker
     #sudo apt-get install -y docker-compose
@@ -71,46 +128,19 @@ setup() {
     esac
 }
 
-#Innentől a törlések
-del-product() {
-    read -p "Mi alapján töröljek?" iddel
-    if [[ "$iddel" == "barcode" ]]
-    then
-    read -p "Vonalkód:" barc
-    echo "Termék $barc törölve!"
-    del-product
-    elif [[ "$iddel" == "name" ]]
-    then
-    read -p "Termék neve:" name
-    echo "$name törölve!"
-    del-product
-    elif [[ "$iddel" == "id" ]]
-    then
-    read -p "Termék azonosítója:" azon
-    echo "$azon termék törölve!"
-    del-product
-    elif [[ "$iddel" == "back" ]]
-    then
-    listen
-    fi
-    }
-
-
 #Kategória hozzáadás
 add-category() {
-    name=$(zenity --entry \
-    --title="Új kategória" \
-    --text="Kategória neve" \
-    --entry-text="kategória")
-    descr=$(zenity --entry \
-    --title="Új kategória" \
-    --text="Kategória leírása" \
-    --entry-text="leírás")
-    if [ -n "$name" ]
+    add_cat=$(zenity --forms --title="Kategória hozzáadása" \
+    --add-entry="Kategória neve" \
+    --add-entry="Kategória leírása")
+    if [ -n "$add_cat" ]
     then
-    $execute "INSERT INTO categories (category_name, description) VALUES ('$name', '$descr') ;"
+    while IFS='|' read -r name description
+    do
+    $execute "INSERT INTO categories (category_name, description) VALUES ('$name', '$description') ;"
+    done <<< "$add_cat"
     zenity --info \
-    --text="Kategória létrehozva: $name, $descr!"
+    --text="Kategória létrehozva: $name!"
     else
     zenity --info \
     --text="Üres kategória nem hozható létre!"
@@ -147,8 +177,9 @@ ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció
 4 'Termék hozzáadása' \
 5 'Termék törlése' \
 6 'Táblák létrehozása' \
-7 'Kategória hozzáadása')
-if [ "$ans" == "Termékek felsorolása" ]
+7 'Kategória hozzáadása' \
+8 'Kategóriák felsorolása' --width=500 --height=500)
+if [ "$ans" == "Kategóriák felsorolása" ]
 then
 list &
 listen
@@ -166,7 +197,10 @@ then
 add-category
 elif [ "$ans" == "Termék törlése" ]
 then
-del-product
+del_product
+elif [ "$ans" == "Termékek felsorolása" ]
+then
+list_products
 else
 exit
 fi
