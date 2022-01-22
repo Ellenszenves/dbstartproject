@@ -1,6 +1,7 @@
 This project is just for my learning, if something goes wrong, its not my fault.
 I want to make something like the Northwind traders database with some GUI in the future.
 A lot of function is only in there for testing, not for the endproduct.
+The program using Docker to install PostgreSQL database.
 Platform: Linux/Ubuntu
 Language: HU/EN
 Help command: -help

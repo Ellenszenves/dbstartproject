@@ -3,10 +3,9 @@
 --
 
 CREATE TABLE categories (
-    category_id smallint NOT NULL,
+    category_id serial,
     category_name character varying(15) NOT NULL,
-    description text,
-    picture bytea
+    description text
 );
 
 
