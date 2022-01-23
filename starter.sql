@@ -202,3 +202,11 @@ CREATE TABLE us_states (
     state_abbr character varying(2),
     state_region character varying(50)
 );
+
+-- Ezt nézi meg a funkció, ami alapján eldönti, hogy renben üzemel e az adatbázis.
+
+CREATE TABLE teszt (
+    teszt varchar(5)
+);
+
+INSERT INTO teszt VALUES ('aaaaa');

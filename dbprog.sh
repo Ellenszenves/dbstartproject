@@ -19,7 +19,7 @@ else
 echo "A PostgreSQL nem aktív!"
 fi
 
-#Felsorolás funkció
+#kategória felsorolás
 list() {
     unset myarray
     unset idarray
@@ -42,6 +42,7 @@ list() {
     listen
 }
 
+#termék felsorolás
 list_products() {
     unset myarray
     unset idarray
@@ -71,6 +72,7 @@ list_products() {
     listen
 }
 
+#termék törlés
 del_product() {
     ezlenne=""
     idvar=""
@@ -96,18 +98,19 @@ del_product() {
     listen
 }
 
-#Help funkció
+#jelenleg teszt funkció
 help() {
     zenity --info \
-        --text="Kilépés: ctrl+c\n
-          Parancsok: createrole: testdb felhasználó létrehozása\n
-          dbsetup: Adatbázis létrehozása\n
-          list: Termékek felsorolása\n
-          add-product: Termék hozzáadása\n
-          del-product: Termék törlése\n
-          back: Visszalépés a főmenübe\n
-          create-tables: Létrehozza a szükséges táblákat." --width=500 --height=500
+        --text="README" \
     listen
+}
+
+help1() {
+    zenity --list \
+            --column="név" --column="teszt" \
+            ez az amaz emez szir szar \
+            --height=500 --width=500 \
+            --position=10%=10%
 }
 
 #Telepítés indító funkció
@@ -137,7 +140,7 @@ setup() {
 }
 
 #Kategória hozzáadás
-add-category() {
+add_category() {
     add_cat=$(zenity --forms --title="Kategória hozzáadása" \
     --add-entry="Kategória neve" \
     --add-entry="Kategória leírása")
@@ -156,7 +159,8 @@ add-category() {
     listen
 }
 
-add-product() {
+#Termék hozzáadás
+add_product() {
     add=$(zenity --forms --title="Termék hozzáadása" \
     --add-entry="Termék neve" \
     --add-entry="Termék kategóriája" \
@@ -186,7 +190,8 @@ ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció
 5 'Termék törlése' \
 6 'Táblák létrehozása' \
 7 'Kategória hozzáadása' \
-8 'Kategóriák felsorolása' --width=500 --height=500)
+8 'Kategóriák felsorolása' \
+9 'teszt' --width=500 --height=500)
 if [ "$ans" == "Kategóriák felsorolása" ]
 then
 list
@@ -198,16 +203,20 @@ then
 dbsetup
 elif [ "$ans" == "Termék hozzáadása" ]
 then
-add-product
+add_product
 elif [ "$ans" == "Kategória hozzáadása" ]
 then
-add-category
+add_category
 elif [ "$ans" == "Termék törlése" ]
 then
 del_product
 elif [ "$ans" == "Termékek felsorolása" ]
 then
 list_products
+elif [ "$ans" == "teszt" ]
+then
+help &
+help1
 else
 exit
 fi
