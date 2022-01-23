@@ -20,16 +20,19 @@ if [ "$posact" == "postgres" ]
 then
 zenity --info --text="PostgreSQL aktív"
 else
-zenity --info --text="A PostgreSQL nem aktív!"
+zenity --question --text="PostgreSQL nem aktív! Telepítsek?" \
+--ok-label="Igen" --cancel-label="Ne"
+#docker-compose up -d
 fi
 db_act="$(docker exec dbstartproject_db_1 psql -t -U test -d shop -c "SELECT * FROM teszt")"
 echo "$db_act"
-if [ "$db_act" == "aaaaa" ]
+if [ "$db_act" == " aaaaa" ]
 then
 zenity --info --text="Az adatbázis lekérdezhető!"
-echo "$db_act"
 else
-zenity --info --text="Az adatbázis nem elérhető!"
+zenity --question --text="Az adatbázis nem elérhető! Telepítsek?" \
+--ok-label="Igen" --cancel-label="Ne"
+#docker-compose up -d
 fi
 }
 

@@ -7,6 +7,15 @@ Linuxon. Az adatbázis PostgreSQL-en fut, amit Docker segítségével konténerb
 Miután sikerült egy minimális funkcionalitást megalkotni, elkezdem véglegesíteni a telepítést.
 Későbbi tervben van, hogy az adatbázist bizonyos időközönként automatikusan mentem.
 
+Működés:
+Létre lehet hozni termékkategóriákat, termékeket.
+Ezeket egymáshoz lehet rendelni.
+Mindkettőt fel lehet sorolni egy listában.
+Ha a kategóriákat listázzuk és kiválasztunk egyet, az adott kategória termékei
+jelennek meg.
+Ha a termékeket listázzuk és kiválasztunk egyet, az adott termék összes tulajdonsága
+jelenik meg egy új ablakban.
+
 EN:
 This project is just for my learning, if something goes wrong, its not my fault.
 I want to make something like the Northwind traders database with some GUI in the future.

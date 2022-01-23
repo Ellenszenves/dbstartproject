@@ -1,33 +1,17 @@
 #!/bin/bash
+IP_db='127.0.0.1'
 db_name='shop'
 db_user='test'
-execute='docker exec dbstartproject_db_1 psql -t -U test -d shop -c'
-echo "Bolti adatbázis project by Erdélyi Tamás. 2022"
-#Kiszedjük változóba a docker státuszt és megvizsgáljuk fut e.
-docact="$(systemctl status docker | grep -o "active")"
-if [ "$docact" == "active" ]
-then
-echo "Docker $docact"
-else
-echo "Docker nem aktív!"
-fi
-posact="$(docker ps | grep -o "postgres")"
-if [ "$posact" == "postgres" ]
-then
-echo "PostgreSQL aktív"
-else
-echo "A PostgreSQL nem aktív!"
-fi
+execute='docker exec dbstartproject_db_1 psql -t'
 
 #kategória felsorolás
-list() {
+list_category() {
     unset myarray
     unset idarray
     unset data
     ezlenne=""
     idvar=""
-    azez=$($execute "SELECT * FROM categories")
-    echo $azez
+    azez=$($execute -h $IP_db -U test -d shop -c "SELECT * FROM categories")
     while IFS='|' read -r id nev description
     do
         ezlenne+="$nev "
@@ -38,8 +22,15 @@ list() {
     for (( i=0; i<${#idarray[*]}; ++i)); do
     data+=( "${idarray[$i]}" "${myarray[$i]}" )
     done
-    zenity --list --title="Kategóriák" --column="ID" --column="Név" "${data[@]}"
+#Ha rákattintunk egy kategóriára akkor az id-ját változóba mentjük, és átadjuk
+#paraméterként a termék listázásnak, hogy az adott kategória termékeit megnézhessük.
+    select=$(zenity --list --title="Kategóriák" --column="ID" --column="Név" "${data[@]}")
+    if [ -n "$select" ]
+    then
+    list_products "$select"
+    else
     listen
+    fi
 }
 
 #termék felsorolás
@@ -47,11 +38,18 @@ list_products() {
     unset myarray
     unset idarray
     unset data
-    echo ${data[0]}
     ezlenne=""
     idvar=""
-    azez=$($execute "SELECT product_name, unit_price FROM products")
-    echo $azez
+#Ellenőrizzük, hogy kaptunk-e paramétert, ha nem akkor mindent felsorolunk, ha igen,
+#akkor csak az adott kategóriába tartozó termékek jelennek meg.
+    if [ -n "$1" ]
+    then
+    azez=$($execute -h $IP_db -U test -d shop -c \
+    "SELECT product_name, unit_price FROM products WHERE category_id = '$1'")
+    else
+    azez=$($execute -h $IP_db -U test -d shop -c \
+    "SELECT product_name, unit_price FROM products")
+    fi
     while IFS='|' read -r id nev description
     do
         ezlenne+="$nev "
@@ -62,22 +60,26 @@ list_products() {
     for (( i=0; i<${#idarray[*]}; ++i)); do
     data+=( "${idarray[$i]}" "${myarray[$i]}" )
     done
-    select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" "${data[@]}")
+    select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" "${data[@]}" \
+    --width=300 --height=500)
     if [ -n "$select" ]
     then
-    inform=$($execute "SELECT * FROM products WHERE product_name='$select'";)
+    inform=$($execute -h $IP_db -U test -d shop -c \
+    "SELECT * FROM products WHERE product_name='$select'";)
     zenity --info \
-    --text="$inform"
+    --text="$inform" --width=300 --height=150
     fi
     listen
 }
 
 #termék törlés
 del_product() {
+    unset myarray
+    unset idarray
+    unset data
     ezlenne=""
     idvar=""
-    azez=$($execute "SELECT product_name, unit_price FROM products")
-    echo $azez
+    azez=$($execute -h $IP_db -U test -d shop -c "SELECT product_name, unit_price FROM products")
     while IFS='|' read -r id nev description
     do
         ezlenne+="$nev "
@@ -91,7 +93,8 @@ del_product() {
     select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" "${data[@]}")
     if [ -n "$select" ]
     then
-    inform=$($execute "DELETE FROM products WHERE product_name='$select'";)
+    inform=$($execute -h $IP_db -U test -d shop -c \
+    "DELETE FROM products WHERE product_name='$select'";)
     zenity --info \
     --text="$select törölve!"
     fi
@@ -100,43 +103,18 @@ del_product() {
 
 #jelenleg teszt funkció
 help() {
-    zenity --info \
-        --text="README" \
+    zenity --question \
+        --text="Menjen, vagy ne?" --ok-label="Igen" --cancel-label="Ne"
+    if [ "$?" = "1" ]
+    then
+    IP_db=$(zenity --forms --title="Távoli adatbázis" \
+    --add-entry="IP cím")
+    echo $IP_db
+    exit
+    else
+    zenity --info --text="Ez volt az igen!"
+    fi
     listen
-}
-
-help1() {
-    zenity --list \
-            --column="név" --column="teszt" \
-            ez az amaz emez szir szar \
-            --height=500 --width=500 \
-            --position=10%=10%
-}
-
-#Telepítés indító funkció
-setup() {
-    zenity --text-info \
-            --title="Setup" \
-            --filename=licence.txt
-
-    case $? in
-    0)
-    echo "Akkor induljunk!"
-    listen
-    #sudo apt-get update
-    #sudo apt-get install -y docker
-    #sudo apt-get install -y docker-compose
-    #sudo usermod -aG docker $USER
-    #docker-compose up -d
-    ;;
-    1)
-    echo "Akkor még nem telepítünk"
-    listen
-    ;;
-    -1)
-    echo "Váratlan hiba történt!"
-    ;;
-    esac
 }
 
 #Kategória hozzáadás
@@ -148,7 +126,8 @@ add_category() {
     then
     while IFS='|' read -r name description
     do
-    $execute "INSERT INTO categories (category_name, description) VALUES ('$name', '$description') ;"
+    $execute -h $IP_db -U test -d shop -c \
+    "INSERT INTO categories (category_name, description) VALUES ('$name', '$description') ;"
     done <<< "$add_cat"
     zenity --info \
     --text="Kategória létrehozva: $name!"
@@ -169,7 +148,8 @@ add_product() {
     then
     while IFS='|' read -r name cat price
     do
-    $execute "INSERT INTO products (product_name, category_id, unit_price) VALUES ('$name', '$cat', '$price') ;"
+    $execute -h $IP_db -U test -d shop -c \
+    "INSERT INTO products (product_name, category_id, unit_price) VALUES ('$name', '$cat', '$price') ;"
     done <<< "$add"
     zenity --info \
     --text="Termék létrehozva: $name!"
@@ -180,25 +160,33 @@ add_product() {
     listen
 }
 
-#Figyeli mit szeretnénk csinálni
+#Távoli adatbázis elérés
+remote_server() {
+IP_db=$(zenity --forms --title="Távoli adatbázis" \
+--add-entry="IP cím")
+echo $IP_db
+listen
+}
+
+#Főmenü
 listen() {
 ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció" \
 1 'Felhasználó létrehozása' \
-2 'Adatbázis létrehozása' \
+2 'Felhasználó törlése' \
 3 'Termékek felsorolása' \
 4 'Termék hozzáadása' \
 5 'Termék törlése' \
-6 'Táblák létrehozása' \
-7 'Kategória hozzáadása' \
-8 'Kategóriák felsorolása' \
+6 'Kategória hozzáadása' \
+7 'Kategóriák felsorolása' \
+8 'Kapcsolódás távoli adatbázishoz' \
 9 'teszt' --width=500 --height=500)
 if [ "$ans" == "Kategóriák felsorolása" ]
 then
-list
+list_category
 elif [ "$ans" == "Felhasználó létrehozása" ]
 then
 listen
-elif [ "$ans" == "Adatbázis létrehozása" ]
+elif [ "$ans" == "Felhasználó törlése" ]
 then
 dbsetup
 elif [ "$ans" == "Termék hozzáadása" ]
@@ -215,10 +203,35 @@ then
 list_products
 elif [ "$ans" == "teszt" ]
 then
-help &
-help1
+help
+elif [ "$ans" == "Kapcsolódás távoli adatbázishoz" ]
+then
+listen
 else
 exit
 fi
 }
-setup
+
+docact="$(systemctl status docker | grep -o "active")"
+if [ "$docact" == "active" ]
+then
+echo "Docker $docact"
+else
+zenity --question --text="Docker nem aktív! Másik gépre akar csatlakozni?" \
+--ok-label="Igen" --cancel-label="Nem"
+if [ "$?" = "0" ]
+then
+remote_server
+else
+exit
+fi
+fi
+posact="$(docker ps | grep -o "postgres")"
+if [ "$posact" == "postgres" ]
+then
+echo "PostgreSQL aktív"
+listen
+else
+zenity --info --text="A PostgreSQL nem aktív!"
+exit
+fi
