@@ -1,8 +1,7 @@
 #!/bin/bash
-IP_db='127.0.0.1'
+IP_db=$(cut -d ":" -f 1 /home/$USER/.pgpass)
 db_name='shop'
 db_user='test'
-execute='docker exec dbstartproject_db_1 psql -t'
 
 #kategória felsorolás
 list_category() {
@@ -11,7 +10,8 @@ list_category() {
     unset data
     ezlenne=""
     idvar=""
-    azez=$($execute -h $IP_db -U test -d shop -c "SELECT * FROM categories")
+    azez=$(psql -t -h $IP_db -p 15432 -U test -d shop -c "SELECT * FROM categories")
+    #azez=$($execute -h $IP_db -U test -d shop -c "SELECT * FROM categories")
     while IFS='|' read -r id nev description
     do
         ezlenne+="$nev "
@@ -44,10 +44,10 @@ list_products() {
 #akkor csak az adott kategóriába tartozó termékek jelennek meg.
     if [ -n "$1" ]
     then
-    azez=$($execute -h $IP_db -U test -d shop -c \
+    azez=$(psql -t -h $IP_db -p 15432 -U test -d shop -c \
     "SELECT product_name, unit_price FROM products WHERE category_id = '$1'")
     else
-    azez=$($execute -h $IP_db -U test -d shop -c \
+    azez=$(psql -t -h $IP_db -p 15432 -U test -d shop -c \
     "SELECT product_name, unit_price FROM products")
     fi
     while IFS='|' read -r id nev description
@@ -64,7 +64,7 @@ list_products() {
     --width=300 --height=500)
     if [ -n "$select" ]
     then
-    inform=$($execute -h $IP_db -U test -d shop -c \
+    inform=$(psql -t -h $IP_db -p 15432 -U test -d shop -c \
     "SELECT * FROM products WHERE product_name='$select'";)
     zenity --info \
     --text="$inform" --width=300 --height=150
@@ -79,7 +79,7 @@ del_product() {
     unset data
     ezlenne=""
     idvar=""
-    azez=$($execute -h $IP_db -U test -d shop -c "SELECT product_name, unit_price FROM products")
+    azez=$(psql -t -h $IP_db -p 15432 -U test -d shop -c "SELECT product_name, unit_price FROM products")
     while IFS='|' read -r id nev description
     do
         ezlenne+="$nev "
@@ -93,7 +93,7 @@ del_product() {
     select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" "${data[@]}")
     if [ -n "$select" ]
     then
-    inform=$($execute -h $IP_db -U test -d shop -c \
+    inform=$(psql -t -h $IP_db -p 15432 -U test -d shop -c \
     "DELETE FROM products WHERE product_name='$select'";)
     zenity --info \
     --text="$select törölve!"
@@ -107,10 +107,7 @@ help() {
         --text="Menjen, vagy ne?" --ok-label="Igen" --cancel-label="Ne"
     if [ "$?" = "1" ]
     then
-    IP_db=$(zenity --forms --title="Távoli adatbázis" \
-    --add-entry="IP cím")
-    echo $IP_db
-    exit
+    remote_server
     else
     zenity --info --text="Ez volt az igen!"
     fi
@@ -126,7 +123,7 @@ add_category() {
     then
     while IFS='|' read -r name description
     do
-    $execute -h $IP_db -U test -d shop -c \
+    psql -t -h $IP_db -p 15432 -U test -d shop -c \
     "INSERT INTO categories (category_name, description) VALUES ('$name', '$description') ;"
     done <<< "$add_cat"
     zenity --info \
@@ -148,7 +145,7 @@ add_product() {
     then
     while IFS='|' read -r name cat price
     do
-    $execute -h $IP_db -U test -d shop -c \
+    psql -t -h $IP_db -p 15432 -U test -d shop -c \
     "INSERT INTO products (product_name, category_id, unit_price) VALUES ('$name', '$cat', '$price') ;"
     done <<< "$add"
     zenity --info \
@@ -161,11 +158,27 @@ add_product() {
 }
 
 #Távoli adatbázis elérés
+#A kapott IP bekerül a .pgpass fájlba aminek a megfelelő jogosultágokat megadjuk
+#utána környezeti változóba kerül, ezután már nem kér jelszavat sem a program, mivel az a fájlban van.
 remote_server() {
 IP_db=$(zenity --forms --title="Távoli adatbázis" \
 --add-entry="IP cím")
-echo $IP_db
+pg_is_there=$(ls -la /home/$USER | grep -o .pgpass )
+if [ "$pg_is_here" == ".pgpass" ]
+then
+echo $IP_db:15432:shop:test:test > /home/$USER/.pgpass
+sudo chmod 600 /home/$USER/.pgpass
+sudo chown $USER:$USER /home/$USER/.pgpass
+export PGPASSFILE='/home/'$USER'/.pgpass'
 listen
+else
+touch /home/$USER/.pgpass
+echo $IP_db:15432:shop:test:test > /home/$USER/.pgpass
+sudo chmod 600 /home/$USER/.pgpass
+sudo chown $USER:$USER /home/$USER/.pgpass
+export PGPASSFILE='/home/'$USER'/.pgpass'
+listen
+fi
 }
 
 #Főmenü
@@ -212,26 +225,36 @@ exit
 fi
 }
 
-docact="$(systemctl status docker | grep -o "active")"
-if [ "$docact" == "active" ]
-then
-echo "Docker $docact"
-else
-zenity --question --text="Docker nem aktív! Másik gépre akar csatlakozni?" \
---ok-label="Igen" --cancel-label="Nem"
-if [ "$?" = "0" ]
-then
-remote_server
-else
-exit
-fi
-fi
-posact="$(docker ps | grep -o "postgres")"
-if [ "$posact" == "postgres" ]
-then
-echo "PostgreSQL aktív"
-listen
-else
-zenity --info --text="A PostgreSQL nem aktív!"
-exit
-fi
+starter() {
+    start=$(zenity --list --title "Menü" --radiolist --column "ID" --column "Funkció" \
+    1 'Szerver' \
+    2 'Kliens')
+    if [ "$start" == "Szerver" ]
+    then
+        docact="$(systemctl status docker | grep -o "active")"
+        if [ "$docact" == "active" ]
+        then
+        echo "Docker $docact"
+        else
+        zenity --question --text="Docker nem aktív! Másik gépre akar csatlakozni?" \
+        --ok-label="Igen" --cancel-label="Nem"
+        if [ "$?" = "0" ]
+        then
+        remote_server
+        fi
+        fi
+        posact="$(docker ps | grep -o "postgres")"
+        if [ "$posact" == "postgres" ]
+        then
+        echo "PostgreSQL aktív"
+        listen
+        else
+        zenity --info --text="A PostgreSQL nem aktív! Lehet, hogy nincs minden telepítve?"
+        exit
+        fi
+    elif [ "$start" == "Kliens" ]
+    then
+        remote_server
+    fi
+}
+starter

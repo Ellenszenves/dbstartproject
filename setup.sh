@@ -22,7 +22,8 @@ zenity --info --text="PostgreSQL aktív"
 else
 zenity --question --text="PostgreSQL nem aktív! Telepítsek?" \
 --ok-label="Igen" --cancel-label="Ne"
-#docker-compose up -d
+sudo chmod 777 starter.sql
+docker-compose up -d
 fi
 db_act="$(docker exec dbstartproject_db_1 psql -t -U test -d shop -c "SELECT * FROM teszt")"
 echo "$db_act"
@@ -32,7 +33,18 @@ zenity --info --text="Az adatbázis lekérdezhető!"
 else
 zenity --question --text="Az adatbázis nem elérhető! Telepítsek?" \
 --ok-label="Igen" --cancel-label="Ne"
-#docker-compose up -d
+sudo chmod 777 starter.sql
+docker-compose up -d
+fi
+psql_act="$(psql --version | grep -o "psql")"
+if [ "$psql_act" == "psql" ]
+then
+zenity --info --text="PSQL kliens telepítve!"
+else
+zenity --question --text="PSQL kliens nincs telepítve! Telepítsem?" \
+--ok-label="Igen" --cancel-label="Ne"
+sudo apt-get update
+sudo apt-get install -y postgresql
 fi
 }
 
