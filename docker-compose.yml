@@ -1,5 +1,5 @@
 version: '3.3'
-
+ 
 services:
   db:
     image: postgres:11
@@ -8,14 +8,13 @@ services:
         source: db_data
         target: /var/lib/postgres/data
       - type: bind
-        source: /home/ellenszenves/starter.sql
+        source: ./starter.sql
         target: /docker-entrypoint-initdb.d/starter.sql
     restart: always
-    environment:
-      - POSTGRES_USER=test
-      - POSTGRES_PASSWORD=test
+      - POSTGRES_USER=aladár
+      - POSTGRES_PASSWORD=12345
       - POSTGRES_DB=shop
     ports:
-      - "15432:5432"
+      - "5432:5432"
 volumes:
   db_data:
