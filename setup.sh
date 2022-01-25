@@ -91,12 +91,12 @@ setup() {
     zenity --info --text="Figyelem! Ezt a telepítést csak a kiszolgáló gépen kell elindítani!" \
     --width=300 --height=150
     ans=$(zenity --list --title="Telepítő" --radiolist --column="ID" --column="Funkció" \
-    1 'Docker Telepítő' \
-    2 'Adatbázis telepítő')
-    if [ "$ans" == "Docker Telepítő" ]
+    1 'Szerver telepítő' \
+    2 'Kliens telepítő')
+    if [ "$ans" == "Szerver telepítő" ]
     then
     dockerinstall
-    elif [ "$ans" == "Adatbázis telepítő" ]
+    elif [ "$ans" == "Kliens telepítő" ]
     then
     postgresql_install
     fi

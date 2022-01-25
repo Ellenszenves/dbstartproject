@@ -5,6 +5,7 @@ db_user=$(cut -d ":" -f 4 /home/$USER/.pgpass)
 
 #kategória felsorolás
 list_category() {
+    unset catarray
     unset myarray
     unset idarray
     unset data
@@ -35,6 +36,7 @@ list_category() {
 
 #termék felsorolás
 list_products() {
+    unset catarray
     unset myarray
     unset idarray
     unset data
@@ -45,31 +47,48 @@ list_products() {
     if [ -n "$1" ]
     then
     azez=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-    "SELECT product_name, unit_price FROM products WHERE category_id = '$1'")
+    "SELECT product_name, unit_price, category_name FROM products LEFT JOIN categories \
+    ON products.category_id = categories.category_id WHERE category_id = '$1'")
     else
     azez=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-    "SELECT product_name, unit_price FROM products")
+    "SELECT product_name, unit_price, category_name FROM products LEFT JOIN categories \
+    ON products.category_id = categories.category_id")
     fi
-    while IFS='|' read -r id nev description
+#Itt szétbontjuk az eredményt annyi részre, ahány rekordot lekértünk, utána
+#array-be helyezzük és összefűzzük őket, így a zenity tudja őket kezelni, és külön kiírni.
+    while IFS='|' read -r namme price catt
     do
-        ezlenne+="$nev "
-        idvar+="$id|"
+        ezlenne+="$price "
+        idvar+="$namme|"
+        cattvar+="$catt|"
     done <<< "$azez"
     read -a myarray <<< $ezlenne
     IFS="|" read -a idarray <<< $idvar
+    IFS="|" read -a catarray <<< $cattvar
     for (( i=0; i<${#idarray[*]}; ++i)); do
-    data+=( "${idarray[$i]}" "${myarray[$i]}" )
+    data+=( "${idarray[$i]}" "${myarray[$i]}" "${catarray[$i]}" )
     done
-    select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" "${data[@]}" \
-    --width=300 --height=500)
+    select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" --column="Kategória" "${data[@]}" \
+    --width=400 --height=500)
     cutted=$(echo $select | cut -b 1-)
+#Ha duplán kattintunk egy termékre, kilistázzuk a tulajdonságait.
     if [ -n "$select" ]
     then
-    echo $cutted
     inform=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-    "SELECT product_name, unit_price FROM products WHERE product_name = '$cutted';")
-    zenity --info \
-    --text="$inform" --width=300 --height=150
+    "SELECT product_name, unit_price, category_name FROM products LEFT JOIN categories \
+    ON products.category_id = categories.category_id WHERE product_name = '$cutted';")
+    infoprice=$(echo $inform | cut -d "|" -f 2)
+    infocat=$(echo $inform | cut -d "|" -f 3)
+
+    egylista+=( "$cutted" "$infoprice" "$infocat" )
+    echo $egylista
+    echo $infoprice
+    echo $infocat
+    atya=$(zenity --list --editable --column=aj --column=na --column=he "${egylista[@]}")
+    # --entry \
+    #--title="$select" \
+    #--text="Név" \
+    #--entry-text="$cutted" --width=300 --height=150
     else
     listen
     fi
@@ -78,6 +97,7 @@ list_products() {
 
 #termék törlés
 del_product() {
+    unset catarray
     unset myarray
     unset idarray
     unset data
