@@ -53,21 +53,25 @@ list_products() {
     while IFS='|' read -r id nev description
     do
         ezlenne+="$nev "
-        idvar+="$id "
+        idvar+="$id|"
     done <<< "$azez"
     read -a myarray <<< $ezlenne
-    read -a idarray <<< $idvar
+    IFS="|" read -a idarray <<< $idvar
     for (( i=0; i<${#idarray[*]}; ++i)); do
     data+=( "${idarray[$i]}" "${myarray[$i]}" )
     done
     select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" "${data[@]}" \
     --width=300 --height=500)
+    cutted=$(echo $select | cut -b 1-)
     if [ -n "$select" ]
     then
+    echo $cutted
     inform=$(psql -t -h $IP_db -p 15432 -U test -d shop -c \
-    "SELECT * FROM products WHERE product_name='$select'";)
+    "SELECT product_name, unit_price FROM products WHERE product_name = '$cutted';")
     zenity --info \
     --text="$inform" --width=300 --height=150
+    else
+    listen
     fi
     listen
 }
