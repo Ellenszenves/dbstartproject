@@ -9,23 +9,22 @@ list_category() {
     unset myarray
     unset idarray
     unset data
-    ezlenne=""
+    namevar=""
     idvar=""
-    azez=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c "SELECT * FROM categories")
-    #azez=$($execute -h $IP_db -U test -d shop -c "SELECT * FROM categories")
+    cats=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c "SELECT * FROM categories")
     while IFS='|' read -r id nev description
     do
-        ezlenne+="$nev "
+        namevar+="$nev "
         idvar+="$id "
-    done <<< "$azez"
-    read -a myarray <<< $ezlenne
+    done <<< "$cats"
+    read -a myarray <<< $namevar
     read -a idarray <<< $idvar
     for (( i=0; i<${#idarray[*]}; ++i)); do
     data+=( "${idarray[$i]}" "${myarray[$i]}" )
     done
 #Ha rákattintunk egy kategóriára akkor az id-ját változóba mentjük, és átadjuk
 #paraméterként a termék listázásnak, hogy az adott kategória termékeit megnézhessük.
-    select=$(zenity --list --title="Kategóriák" --column="ID" --column="Név" "${data[@]}")
+    select=$(zenity --list --title="Kategóriák" --column="ID" --column="Név" "${data[@]}" )
     if [ -n "$select" ]
     then
     list_products "$select"
@@ -46,22 +45,22 @@ list_products() {
 #akkor csak az adott kategóriába tartozó termékek jelennek meg.
     if [ -n "$1" ]
     then
-    azez=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+    prods=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
     "SELECT product_name, unit_price, category_name FROM products LEFT JOIN categories \
-    ON products.category_id = categories.category_id WHERE category_id = '$1'")
+    ON products.category_id = categories.category_id WHERE products.category_id = '$1'")
     else
-    azez=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+    prods=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
     "SELECT product_name, unit_price, category_name FROM products LEFT JOIN categories \
     ON products.category_id = categories.category_id")
     fi
 #Itt szétbontjuk az eredményt annyi részre, ahány rekordot lekértünk, utána
 #array-be helyezzük és összefűzzük őket, így a zenity tudja őket kezelni, és külön kiírni.
-    while IFS='|' read -r namme price catt
+    while IFS='|' read -r namme price cat
     do
         ezlenne+="$price "
         idvar+="$namme|"
-        cattvar+="$catt|"
-    done <<< "$azez"
+        cattvar+="$cat|"
+    done <<< "$prods"
     read -a myarray <<< $ezlenne
     IFS="|" read -a idarray <<< $idvar
     IFS="|" read -a catarray <<< $cattvar
@@ -79,12 +78,10 @@ list_products() {
     ON products.category_id = categories.category_id WHERE product_name = '$cutted';")
     infoprice=$(echo $inform | cut -d "|" -f 2)
     infocat=$(echo $inform | cut -d "|" -f 3)
-
     egylista+=( "$cutted" "$infoprice" "$infocat" )
-    echo $egylista
+    atya=$(zenity --list --editable --column="Típus:" --column="Érték" "Név:" "$cutted" "Ár:" "$infoprice" "Kategória:" "$infocat" )
     echo $infoprice
-    echo $infocat
-    atya=$(zenity --list --editable --column=aj --column=na --column=he "${egylista[@]}")
+    echo "$atya"
     # --entry \
     #--title="$select" \
     #--text="Név" \
