@@ -22,6 +22,7 @@ services:
         source: ./starter.sql
         target: /docker-entrypoint-initdb.d/starter.sql
     restart: always
+    environment:
       - POSTGRES_USER=$felh
       - POSTGRES_PASSWORD=$jelsz
       - POSTGRES_DB=shop
@@ -62,9 +63,9 @@ postgresql_install() {
         zenity --question --text="PostgreSQL nem aktív! Telepítsek?" \
         --ok-label="Igen" --cancel-label="Ne"
         sudo chmod 777 starter.sql
-        docker-compose up -d
+        dockercompose
     fi
-    db_act="$(docker exec dbstartproject_db_1 psql -t -U test -d shop -c "SELECT * FROM teszt")"
+    db_act="$(docker exec dbstartproject_db_1 psql -t -p 15432 -U test -d shop -c "SELECT * FROM teszt")"
     echo "$db_act"
     if [ "$db_act" == " aaaaa" ]
         then
@@ -73,7 +74,7 @@ postgresql_install() {
         zenity --question --text="Az adatbázis nem elérhető! Telepítsek?" \
         --ok-label="Igen" --cancel-label="Ne"
         sudo chmod 777 starter.sql
-        docker-compose up -d
+        dockercompose
     fi
     psql_act="$(psql --version | grep -o "psql")"
         if [ "$psql_act" == "psql" ]
@@ -88,8 +89,6 @@ postgresql_install() {
 }
 
 setup() {
-    zenity --info --text="Figyelem! Ezt a telepítést csak a kiszolgáló gépen kell elindítani!" \
-    --width=300 --height=150
     ans=$(zenity --list --title="Telepítő" --radiolist --column="ID" --column="Funkció" \
     1 'Szerver telepítő' \
     2 'Kliens telepítő')
@@ -101,4 +100,4 @@ setup() {
     postgresql_install
     fi
 }
-dockercompose
+setup

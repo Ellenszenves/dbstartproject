@@ -11,10 +11,11 @@ services:
         source: ./starter.sql
         target: /docker-entrypoint-initdb.d/starter.sql
     restart: always
-      - POSTGRES_USER=aladár
-      - POSTGRES_PASSWORD=12345
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
       - POSTGRES_DB=shop
     ports:
-      - "5432:5432"
+      - "15432:5432"
 volumes:
   db_data:
