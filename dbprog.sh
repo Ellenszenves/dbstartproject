@@ -216,6 +216,14 @@ remote_server() {
     fi
 }
 
+server_info() {
+    ipvar=$(ip address show enp0s3 | grep -w "inet" | cut -c 5- | cut -d " " -f 2)
+    zenity --info --text="IP cím: $ipvar \
+    Adatbázis neve: $db_name \
+    Felhasználó: $db_user" --width=400 --height=300
+    listen
+}
+
 #Főmenü
 listen() {
     ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció" \
@@ -227,7 +235,7 @@ listen() {
     6 'Kategória hozzáadása' \
     7 'Kategóriák felsorolása' \
     8 'Kapcsolódás távoli adatbázishoz' \
-    9 'teszt' --width=500 --height=500)
+    9 'Szerver Információ' --width=500 --height=500)
     if [ "$ans" == "Kategóriák felsorolása" ]
     then
     list_category
@@ -249,9 +257,9 @@ listen() {
     elif [ "$ans" == "Termékek felsorolása" ]
     then
     list_products
-    elif [ "$ans" == "teszt" ]
+    elif [ "$ans" == "Szerver Információ" ]
     then
-    help
+    server_info
     elif [ "$ans" == "Kapcsolódás távoli adatbázishoz" ]
     then
     remote_server
@@ -262,9 +270,9 @@ listen() {
 
 starter() {
     start=$(zenity --list --title "Menü" --radiolist --column "ID" --column "Funkció" \
-    1 'Szerver' \
-    2 'Kliens')
-    if [ "$start" == "Szerver" ]
+    1 'Belépés' \
+    2 'Távoli szerver adatai')
+    if [ "$start" == "Belépés" ]
     then
         docact="$(systemctl status postgresql | grep -o "active")"
         if [ "$docact" == "active" ]
@@ -288,7 +296,7 @@ starter() {
         zenity --info --text="A PostgreSQL nem aktív! Lehet, hogy nincs minden telepítve?"
         exit
         fi
-    elif [ "$start" == "Kliens" ]
+    elif [ "$start" == "Távoli szerver adatai" ]
     then
         remote_server
     fi
