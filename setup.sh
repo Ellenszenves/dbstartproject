@@ -1,91 +1,36 @@
 #!/bin/bash
 #A telepítések után újra kell indítani a gépet!
-dockercompose() {
-    user_pass=$(zenity --forms --title="Felhasználó" \
-    --add-entry="Felhasználónév" \
-    --add-entry="Jelszó")
-    if [ -n "$user_pass" ]
-    then
-    while IFS='|' read -r felh jelsz
-        do
-        read -r -d '' dokk << END
-version: '3.3'
- 
-services:
-  db:
-    image: postgres:11
-    volumes:
-      - type: volume
-        source: db_data
-        target: /var/lib/postgres/data
-      - type: bind
-        source: ./starter.sql
-        target: /docker-entrypoint-initdb.d/starter.sql
-    restart: always
-    environment:
-      - POSTGRES_USER=$felh
-      - POSTGRES_PASSWORD=$jelsz
-      - POSTGRES_DB=shop
-    ports:
-      - "15432:5432"
-volumes:
-  db_data:
-END
-        done <<< "$user_pass"
-        echo "$dokk" > docker-compose.yml
-        docker-compose up -d
-    else
-    zenity --info --text="Üres mező nem engedélyezett!"
-    dockercompose
-    fi
+server_install() {
+    sudo apt-get update
+    sudo apt-get install -y postgresql
+    read -p "Adatbázis neve:" dataname
+    sudo -u postgres psql -c "CREATE DATABASE $dataname"
+    sudo chmod 777 starter.sql
+    sudo -u postgres psql -d $dataname -a -f starter.sql
+    read -p "PSQL felhasználó:" username
+    sudo -u postgres psql -c "CREATE ROLE $username WITH SUPERUSER"
+    read -p "PSQL jelszó:" psqlpass
+    sudo -u postgres psql -c "ALTER USER $username WITH PASSWORD '$psqlpass'"
+    sudo -u postgres psql -c "ALTER ROLE $username WITH LOGIN"
+    #Config fájl helye:
+    #sudo -u postgres psql -c 'SHOW config_file'
+    sudo -u postgres sed -i "s/port = 5432/port = 15432/" /etc/postgresql/12/main/postgresql.conf
+    sudo -u postgres sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/12/main/postgresql.conf
+    sudo chmod 666 /etc/postgresql/12/main/pg_hba.conf
+    sudo -u postgres sed -i "s/local   all             postgres                                peer/local   all             postgres                                md5/" /etc/postgresql/12/main/pg_hba.conf
+    echo "host    all             all              0.0.0.0/0                       md5" >> /etc/postgresql/12/main/pg_hba.conf
+    echo "host    all             all              ::/0                            md5" >> /etc/postgresql/12/main/pg_hba.conf
+    echo "local all $username md5" >> /etc/postgresql/12/main/pg_hba.conf
+    sudo systemctl restart postgresql
+    #Még hozzá kell adni az adott felhasználót a pg_hba.conf-ba: local all test md5
+    echo 127.0.0.1:15432:$dataname:$username:$psqlpass > /home/$USER/.pgpass
+            sudo chmod 600 /home/$USER/.pgpass
+            sudo chown $USER:$USER /home/$USER/.pgpass
+            export PGPASSFILE='/home/'$USER'/.pgpass'
 }
 
-dockerinstall() {
-    docact="$(docker --version | grep -o "Docker")"
-    if [ "$docact" == "Docker" ]
-        then
-        zenity --info --text="Docker már telepítve!"
-        else
-        sudo apt-get update
-        sudo apt-get install -y docker
-        sudo apt-get install -y docker-compose
-        sudo usermod -aG docker $USER
-        zenity --info --text="A telepítés befejeződött, kérem indítsa újra a számítógépet!"
-    fi
-}
+client_install() {
 
-postgresql_install() {
-    posact="$(docker ps | grep -o "postgres")"
-    if [ "$posact" == "postgres" ]
-        then
-        zenity --info --text="PostgreSQL aktív"
-        else
-        zenity --question --text="PostgreSQL nem aktív! Telepítsek?" \
-        --ok-label="Igen" --cancel-label="Ne"
-        sudo chmod 777 starter.sql
-        dockercompose
-    fi
-    db_act="$(docker exec dbstartproject_db_1 psql -t -p 15432 -U test -d shop -c "SELECT * FROM teszt")"
-    echo "$db_act"
-    if [ "$db_act" == " aaaaa" ]
-        then
-        zenity --info --text="Az adatbázis lekérdezhető!"
-        else
-        zenity --question --text="Az adatbázis nem elérhető! Telepítsek?" \
-        --ok-label="Igen" --cancel-label="Ne"
-        sudo chmod 777 starter.sql
-        dockercompose
-    fi
-    psql_act="$(psql --version | grep -o "psql")"
-        if [ "$psql_act" == "psql" ]
-        then
-        zenity --info --text="PSQL kliens telepítve!"
-        else
-        zenity --question --text="PSQL kliens nincs telepítve! Telepítsem?" \
-        --ok-label="Igen" --cancel-label="Ne"
-        sudo apt-get update
-        sudo apt-get install -y postgresql
-    fi
 }
 
 setup() {
@@ -94,10 +39,10 @@ setup() {
     2 'Kliens telepítő')
     if [ "$ans" == "Szerver telepítő" ]
     then
-    dockerinstall
+    server_install
     elif [ "$ans" == "Kliens telepítő" ]
     then
-    postgresql_install
+    client_install
     fi
 }
 setup

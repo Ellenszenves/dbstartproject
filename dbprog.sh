@@ -166,7 +166,7 @@ add_product() {
     then
     while IFS='|' read -r name cat price
     do
-    psql -t -h $IP_db -p 15432 -U $db_user -d $db_user -c \
+    psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
     "INSERT INTO products (product_name, category_id, unit_price) VALUES ('$name', '$cat', '$price') ;"
     done <<< "$add"
     zenity --info \
@@ -185,15 +185,16 @@ remote_server() {
     IP_db=$(zenity --forms --title="Távoli adatbázis" \
     --add-entry="IP cím" \
     --add-entry="Felhasználónév" \
-    --add-entry="Jelszó")
+    --add-entry="Jelszó" \
+    --add-enty="Adatbázis neve:")
     if [ -n "$IP_db" ]
     then
-    while IFS='|' read -r protocoll username passwo
+    while IFS='|' read -r protocoll username passwo data
         do
         pg_is_there=$(ls -la /home/$USER | grep -o .pgpass )
             if [ "$pg_is_here" == ".pgpass" ]
             then
-            echo $protocoll:15432:shop:$username:$passwo > /home/$USER/.pgpass
+            echo $protocoll:15432:$data:$username:$passwo > /home/$USER/.pgpass
             sudo chmod 600 /home/$USER/.pgpass
             sudo chown $USER:$USER /home/$USER/.pgpass
             export PGPASSFILE='/home/'$USER'/.pgpass'
@@ -201,7 +202,7 @@ remote_server() {
             listen
             else
             touch /home/$USER/.pgpass
-            echo $protocoll:15432:shop:$username:$passwo > /home/$USER/.pgpass
+            echo $protocoll:15432:$data:$username:$passwo > /home/$USER/.pgpass
             sudo chmod 600 /home/$USER/.pgpass
             sudo chown $USER:$USER /home/$USER/.pgpass
             export PGPASSFILE='/home/'$USER'/.pgpass'
@@ -265,10 +266,11 @@ starter() {
     2 'Kliens')
     if [ "$start" == "Szerver" ]
     then
-        docact="$(systemctl status docker | grep -o "active")"
+        docact="$(systemctl status postgresql | grep -o "active")"
         if [ "$docact" == "active" ]
         then
-        echo "Docker $docact"
+        echo "Adatbázis $docact"
+        listen
         else
         zenity --question --text="Docker nem aktív! Másik gépre akar csatlakozni?" \
         --ok-label="Igen" --cancel-label="Nem"
