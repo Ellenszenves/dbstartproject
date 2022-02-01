@@ -1,8 +1,14 @@
 #!/bin/bash
 #A telepítések után újra kell indítani a gépet!
 server_install() {
+    docact="$(systemctl status postgresql | grep -o "active")"
+    if [ "$docact" == "active" ]
+    then
+    --zenity --info --text="PostgreSQL szerver már telepítve."
+    else
     sudo apt-get update
     sudo apt-get install -y postgresql
+    fi
     read -p "Adatbázis neve:" dataname
     sudo -u postgres psql -c "CREATE DATABASE $dataname"
     sudo chmod 777 starter.sql
@@ -23,14 +29,27 @@ server_install() {
     echo "local all $username md5" >> /etc/postgresql/12/main/pg_hba.conf
     sudo systemctl restart postgresql
     #Még hozzá kell adni az adott felhasználót a pg_hba.conf-ba: local all test md5
-    echo 127.0.0.1:15432:$dataname:$username:$psqlpass > /home/$USER/.pgpass
+    pg_is_there=$(ls -la /home/$USER | grep -o .pgpass )
+            if [ "$pg_is_here" == ".pgpass" ]
+            then
+            echo 127.0.0.1:15432:$dataname:$username:$psqlpass > /home/$USER/.pgpass
             sudo chmod 600 /home/$USER/.pgpass
             sudo chown $USER:$USER /home/$USER/.pgpass
             export PGPASSFILE='/home/'$USER'/.pgpass'
+            zenity --info --text="Telepítés kész!!"
+            else
+            touch /home/$USER/.pgpass
+            echo 127.0.0.1:15432:$dataname:$username:$psqlpass > /home/$USER/.pgpass
+            sudo chmod 600 /home/$USER/.pgpass
+            sudo chown $USER:$USER /home/$USER/.pgpass
+            export PGPASSFILE='/home/'$USER'/.pgpass'
+            zenity --info --text="Telepítés kész!"
 }
 
 client_install() {
-
+    sudo apt-get update
+    sudo apt-get install -y postgresql-client
+    zenity --info --text="A programban a kliens menüpontban tud belépni."
 }
 
 setup() {

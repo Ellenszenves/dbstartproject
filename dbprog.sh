@@ -270,7 +270,6 @@ starter() {
         if [ "$docact" == "active" ]
         then
         echo "Adatbázis $docact"
-        listen
         else
         zenity --question --text="Docker nem aktív! Másik gépre akar csatlakozni?" \
         --ok-label="Igen" --cancel-label="Nem"
@@ -279,10 +278,11 @@ starter() {
         remote_server
         fi
         fi
-        posact="$(docker ps | grep -o "postgres")"
-        if [ "$posact" == "postgres" ]
+        psteszt=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+        "SELECT teszt FROM teszt" | grep -o "aaaaa")
+        if [ "$psteszt" == "aaaaa" ]
         then
-        echo "PostgreSQL aktív"
+        echo "Adatbázis elérhető"
         listen
         else
         zenity --info --text="A PostgreSQL nem aktív! Lehet, hogy nincs minden telepítve?"
