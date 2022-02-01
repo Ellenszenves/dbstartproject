@@ -3,11 +3,15 @@ Ez a kis project gyakorlásképp készül, szóval ha nem működik benne semmi,
 sem kell meglepődni. Mivel shell scriptet és SQL-t szeretnék gyakorolni, így ez
 a kombináció kerekedett ki belőle.
 Kezdetleges grafikai felületet próbálok összehozni Zenity segítségével, ami elérhető
-Linuxon. Az adatbázis PostgreSQL-en fut, amit Docker segítségével konténerben futtatok.
+Linuxon. Az adatbázis PostgreSQL-en fut, a kliensekre elég a kliens alkalmazását letölteni.
 Miután sikerült egy minimális funkcionalitást megalkotni, elkezdem véglegesíteni a telepítést.
 Későbbi tervben van, hogy az adatbázist bizonyos időközönként automatikusan mentem.
 
 Működés:
+Először a setup.sh-t indítjuk a program függőségeinek telepítéséhez.
+Utána a dbprog.sh-t használjuk, itt egyből beléphetünk, ha ez a szervergép
+és lefuttattuk a telepítést, vagy megadhatjuk a szerver adatait a másik menüpontban.
+Eddigi funkciók:
 Létre lehet hozni termékkategóriákat, termékeket.
 Ezeket egymáshoz lehet rendelni.
 Mindkettőt fel lehet sorolni egy listában.
@@ -20,6 +24,6 @@ EN:
 This project is just for my learning, if something goes wrong, its not my fault.
 I want to make something like the Northwind traders database with some GUI in the future.
 A lot of function is only in there for testing, not for the endproduct.
-The program using Docker to install PostgreSQL database.
+The program using PostgreSQL on the server and PostgreSQL-client on the client machine.
 Platform: Linux/Ubuntu
 Language: HU/EN
