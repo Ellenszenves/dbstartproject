@@ -186,7 +186,7 @@ remote_server() {
     --add-entry="IP cím" \
     --add-entry="Felhasználónév" \
     --add-entry="Jelszó" \
-    --add-enty="Adatbázis neve:")
+    --add-entry="Adatbázis neve")
     if [ -n "$IP_db" ]
     then
     while IFS='|' read -r protocoll username passwo data

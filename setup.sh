@@ -44,12 +44,19 @@ server_install() {
             sudo chown $USER:$USER /home/$USER/.pgpass
             export PGPASSFILE='/home/'$USER'/.pgpass'
             zenity --info --text="Telepítés kész!"
+            fi
 }
 
 client_install() {
+    cliact="$(systemctl status postgresql | grep -o "active")"
+    if [ "$cliact" == "active" ]
+    then
     sudo apt-get update
     sudo apt-get install -y postgresql-client
     zenity --info --text="A programban a kliens menüpontban tud belépni."
+    else
+    zenity --info --text="A kliens már telepítve van!"
+    fi
 }
 
 setup() {
