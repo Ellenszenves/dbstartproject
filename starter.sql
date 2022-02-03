@@ -3,7 +3,7 @@
 --
 
 CREATE TABLE categories (
-    category_id serial,
+    category_id int NOT NULL UNIQUE,
     category_name character varying(15) NOT NULL UNIQUE,
     description text
 );

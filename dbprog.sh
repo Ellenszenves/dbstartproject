@@ -5,6 +5,7 @@ db_user=$(cut -d ":" -f 4 /home/$USER/.pgpass)
 
 #kategória felsorolás
 list_category() {
+    unset stockarray
     unset catarray
     unset myarray
     unset idarray
@@ -35,6 +36,7 @@ list_category() {
 
 #termék felsorolás
 list_products() {
+    unset stockarray
     unset catarray
     unset myarray
     unset idarray
@@ -46,46 +48,63 @@ list_products() {
     if [ -n "$1" ]
     then
     prods=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-    "SELECT product_name, unit_price, category_name FROM products LEFT JOIN categories \
+    "SELECT product_name, unit_price, category_name, units_in_stock FROM products LEFT JOIN categories \
     ON products.category_id = categories.category_id WHERE products.category_id = '$1'")
     else
     prods=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-    "SELECT product_name, unit_price, category_name FROM products LEFT JOIN categories \
+    "SELECT product_name, unit_price, category_name, units_in_stock FROM products LEFT JOIN categories \
     ON products.category_id = categories.category_id")
     fi
+    echo $prods
 #Itt szétbontjuk az eredményt annyi részre, ahány rekordot lekértünk, utána
 #array-be helyezzük és összefűzzük őket, így a zenity tudja őket kezelni, és külön kiírni.
-    while IFS='|' read -r namme price cat
+    while IFS='|' read -r namme price cat stock
     do
         ezlenne+="$price "
         idvar+="$namme|"
         cattvar+="$cat|"
+        stockvar+="$stock|"
     done <<< "$prods"
     read -a myarray <<< $ezlenne
     IFS="|" read -a idarray <<< $idvar
     IFS="|" read -a catarray <<< $cattvar
+    IFS="|" read -a stockarray <<< $stockvar
     for (( i=0; i<${#idarray[*]}; ++i)); do
-    data+=( "${idarray[$i]}" "${myarray[$i]}" "${catarray[$i]}" )
+    data+=( "${idarray[$i]}" "${myarray[$i]}" "${catarray[$i]}" "${stockarray[$i]}")
     done
-    select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" --column="Kategória" "${data[@]}" \
+    select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" --column="Kategória" --column="Készlet" "${data[@]}" \
     --width=400 --height=500)
     cutted=$(echo $select | cut -b 1-)
-#Ha duplán kattintunk egy termékre, kilistázzuk a tulajdonságait.
+#Ha duplán kattintunk egy termékre, módosíthatjuk a tulajdonságait.
     if [ -n "$select" ]
     then
     inform=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-    "SELECT product_name, unit_price, category_name FROM products LEFT JOIN categories \
+    "SELECT product_name, unit_price, category_name, units_in_stock FROM products LEFT JOIN categories \
     ON products.category_id = categories.category_id WHERE product_name = '$cutted';")
     infoprice=$(echo $inform | cut -d "|" -f 2)
     infocat=$(echo $inform | cut -d "|" -f 3)
-    egylista+=( "$cutted" "$infoprice" "$infocat" )
-    atya=$(zenity --list --editable --column="Típus:" --column="Érték" "Név:" "$cutted" "Ár:" "$infoprice" "Kategória:" "$infocat" )
-    echo $infoprice
-    echo "$atya"
-    # --entry \
-    #--title="$select" \
-    #--text="Név" \
-    #--entry-text="$cutted" --width=300 --height=150
+    infostock=$(echo $inform | cut -d "|" -f 4)
+    egylista+=( "$cutted" "$infoprice" "$infocat" "$infostock" )
+    #atya=$(zenity --list --editable --column="Típus:" --column="Érték" "Név:" "$cutted" "Ár:" "$infoprice" "Kategória:" "$infocat" "Készlet:" "$infostock")
+    mod=$(zenity --list --title="Módosítás" --radiolist --column="ID" --column="Funkció" \
+    1 'Név' 2 'Ár' 3 'Kategória' 4 'Készlet')
+    if [ "$mod" == "Név" ]
+    then
+    namemod=$(zenity --forms --title=$cutted \
+    --add-entry="Új név")
+    elif [ "$mod" == "Ár" ]
+    then
+    pricemod=$(zenity --forms --title=$cutted \
+    --add-entry="Új Ár")
+    elif [ "$mod" == "Kategória" ]
+    then
+    catmod=$(zenity --forms --title=$cutted \
+    --add-entry="Új kategória")
+    elif [ "$mod" == "Készlet" ]
+    then
+    stockmod=$(zenity --forms --title=$cutted \
+    --add-entry="Új készlet")
+    fi
     else
     listen
     fi
@@ -94,6 +113,7 @@ list_products() {
 
 #termék törlés
 del_product() {
+    unset stockarray
     unset catarray
     unset myarray
     unset idarray
@@ -117,7 +137,7 @@ del_product() {
     inform=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
     "DELETE FROM products WHERE product_name='$select'";)
     zenity --info \
-    --text="$select törölve!"
+    --text=$select" törölve!"
     fi
     listen
 }
@@ -160,17 +180,18 @@ add_category() {
 add_product() {
     add=$(zenity --forms --title="Termék hozzáadása" \
     --add-entry="Termék neve" \
-    --add-entry="Termék kategóriája" \
-    --add-entry="Termék ára")
+    --add-entry="Termék kategóriája(ID)" \
+    --add-entry="Termék ára" \
+    --add-entry="Darabszám")
     if [ -n "$add" ]
     then
-    while IFS='|' read -r name cat price
+    while IFS='|' read -r name cat price stock
     do
     psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-    "INSERT INTO products (product_name, category_id, unit_price) VALUES ('$name', '$cat', '$price') ;"
+    "INSERT INTO products (product_name, category_id, unit_price, units_in_stock) VALUES ('$name', '$cat', '$price', '$stock') ;"
     done <<< "$add"
     zenity --info \
-    --text="Termék létrehozva: $name!"
+    --text=$name" létrehozva!"
     else
     zenity --info \
     --text="Üres termék nem hozható létre!"
@@ -224,27 +245,56 @@ server_info() {
     listen
 }
 
+del_category() {
+    unset stockarray
+    unset catarray
+    unset myarray
+    unset idarray
+    unset data
+    ezlenne=""
+    idvar=""
+    cats=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c "SELECT * FROM categories")
+    while IFS='|' read -r id nev description
+    do
+        ezlenne+="$nev "
+        idvar+="$id "
+    done <<< "$cats"
+    read -a myarray <<< $ezlenne
+    read -a idarray <<< $idvar
+    for (( i=0; i<${#idarray[*]}; ++i)); do
+    data+=( "${idarray[$i]}" "${myarray[$i]}" )
+    done
+    select=$(zenity --list --title="Kategóriák" --column="ID" --column="Név" "${data[@]}" )
+    if [ -n "$select" ]
+    then
+    inform=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+    "DELETE FROM categories WHERE category_id='$select'";)
+    zenity --info \
+    --text="Kategória törölve!"
+    fi
+    listen
+}
+
 #Főmenü
 listen() {
     ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció" \
-    1 'Felhasználó létrehozása' \
-    2 'Felhasználó törlése' \
-    3 'Termékek felsorolása' \
-    4 'Termék hozzáadása' \
-    5 'Termék törlése' \
-    6 'Kategória hozzáadása' \
-    7 'Kategóriák felsorolása' \
-    8 'Kapcsolódás távoli adatbázishoz' \
-    9 'Szerver Információ' --width=500 --height=500)
+    1 'Termék hozzáadása' \
+    2 'Termékek felsorolása' \
+    3 'Termék törlése' \
+    4 'Kategória hozzáadása' \
+    5 'Kategóriák felsorolása' \
+    6 'Kategória törlése' \
+    7 'Kapcsolódás távoli adatbázishoz' \
+    8 'Rendszerinformáció' --width=500 --height=500)
     if [ "$ans" == "Kategóriák felsorolása" ]
     then
     list_category
-    elif [ "$ans" == "Felhasználó létrehozása" ]
+    elif [ "$ans" == "Kategória törlése" ]
     then
-    listen
+    del_category
     elif [ "$ans" == "Felhasználó törlése" ]
     then
-    dbsetup
+    del_user
     elif [ "$ans" == "Termék hozzáadása" ]
     then
     add_product
@@ -257,7 +307,7 @@ listen() {
     elif [ "$ans" == "Termékek felsorolása" ]
     then
     list_products
-    elif [ "$ans" == "Szerver Információ" ]
+    elif [ "$ans" == "Rendszerinformáció" ]
     then
     server_info
     elif [ "$ans" == "Kapcsolódás távoli adatbázishoz" ]
