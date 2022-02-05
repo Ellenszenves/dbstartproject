@@ -3,15 +3,23 @@
 add_product() {
     add=$(zenity --forms --title="Termék hozzáadása" \
     --add-entry="Termék neve" \
-    --add-entry="Termék kategóriája(ID)" \
+    --add-entry="Termék kategóriája" \
     --add-entry="Termék ára" \
     --add-entry="Darabszám")
     if [ -n "$add" ]
     then
     while IFS='|' read -r name cat price stock
     do
-    psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-    "INSERT INTO products (product_name, category_id, unit_price, units_in_stock) VALUES ('$name', '$cat', '$price', '$stock') ;"
+        catid=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+        "SELECT category_id FROM categories WHERE category_name = '$cat';")
+            if [ $catid -ge 0 ]
+            then
+            psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+            "INSERT INTO products (product_name, category_id, unit_price, units_in_stock) VALUES ('$name', '$catid', '$price', '$stock') ;"
+            else
+            zenity --info --text="Nincs ilyen kategória!"
+            add_product
+            fi
     done <<< "$add"
     zenity --info \
     --text=$name" létrehozva!"

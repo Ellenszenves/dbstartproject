@@ -1,6 +1,4 @@
---
 -- Name: categories; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE categories (
     category_id int NOT NULL UNIQUE,
@@ -8,34 +6,11 @@ CREATE TABLE categories (
     description text
 );
 
-
---
--- Name: customer_customer_demo; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE customer_customer_demo (
-    customer_id bpchar NOT NULL,
-    customer_type_id bpchar NOT NULL
-);
-
-
---
--- Name: customer_demographics; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE customer_demographics (
-    customer_type_id bpchar NOT NULL,
-    customer_desc text
-);
-
-
---
 -- Name: customers; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE customers (
     customer_id SERIAL,
-    company_name character varying(40) NOT NULL,
+    company_name character varying(40),
     contact_name character varying(30),
     contact_title character varying(30),
     address character varying(60),
@@ -46,15 +21,11 @@ CREATE TABLE customers (
     tax character varying(24)
 );
 
-
---
 -- Name: employees; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE employees (
-    employee_id smallint NOT NULL,
-    last_name character varying(20) NOT NULL,
-    first_name character varying(10) NOT NULL,
+    employee_id SERIAL,
+    employee_name varchar(40) NOT NULL,
     title character varying(30),
     title_of_courtesy character varying(25),
     birth_date date,
@@ -64,7 +35,7 @@ CREATE TABLE employees (
     region character varying(15),
     postal_code character varying(10),
     country character varying(15),
-    home_phone character varying(24),
+    phone character varying(24),
     extension character varying(4),
     photo bytea,
     notes text,
@@ -72,22 +43,14 @@ CREATE TABLE employees (
     photo_path character varying(255)
 );
 
-
---
 -- Name: employee_territories; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE employee_territories (
     employee_id smallint NOT NULL,
     territory_id character varying(20) NOT NULL
 );
 
-
-
-
---
 -- Name: order_details; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE order_details (
     order_id smallint NOT NULL,
@@ -97,13 +60,10 @@ CREATE TABLE order_details (
     discount real NOT NULL
 );
 
-
---
 -- Name: orders; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE orders (
-    order_id smallint NOT NULL,
+    order_id SERIAL,
     customer_id bpchar,
     employee_id smallint,
     order_date date,
@@ -119,10 +79,7 @@ CREATE TABLE orders (
     ship_country character varying(15)
 );
 
-
---
 -- Name: products; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE products (
     product_id serial,
@@ -137,20 +94,14 @@ CREATE TABLE products (
     discontinued integer DEFAULT '0'
 );
 
-
---
 -- Name: region; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE region (
     region_id smallint NOT NULL,
     region_description bpchar NOT NULL
 );
 
-
---
 -- Name: shippers; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE shippers (
     shipper_id smallint NOT NULL,
@@ -158,11 +109,7 @@ CREATE TABLE shippers (
     phone character varying(24)
 );
 
-
-
---
 -- Name: suppliers; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE suppliers (
     supplier_id smallint NOT NULL,
@@ -179,10 +126,7 @@ CREATE TABLE suppliers (
     homepage text
 );
 
-
---
 -- Name: territories; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE territories (
     territory_id character varying(20) NOT NULL,
@@ -190,10 +134,7 @@ CREATE TABLE territories (
     region_id smallint NOT NULL
 );
 
-
---
 -- Name: us_states; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
 
 CREATE TABLE us_states (
     state_id smallint NOT NULL,

@@ -1,3 +1,4 @@
+#!/bin/bash
 #kategória felsorolás
 list_category() {
     unset stockarray

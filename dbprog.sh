@@ -16,61 +16,25 @@ help() {
     listen
 }
 
-#Vásárló hozzáadása
-add_customer() {
-    add=$(zenity --forms --title="Vásárló hozzáadása" \
-    --add-entry="Vásárló neve" \
-    --add-entry="Adószám" \
-    --add-entry="Város" \
-    --add-entry="Cím" \
+#Eladó hozzáadása
+add_employee() {
+    add=$(zenity --forms --title="Munkatárs hozzáadása" \
+    --add-entry="Név" \
+    --add-entry="Beosztás" \
     --add-entry="Telefonszám")
     if [ -n "$add" ]
     then
-    while IFS='|' read -r name tax city address tel
+    while IFS='|' read -r ename title phone
     do
-    psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-    "INSERT INTO customers (contact_name, tax, city, address, phone) VALUES ('$name', '$tax', '$city', '$address', '$tel') ;"
+        psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+        "INSERT INTO employees (employee_name, title, phone) VALUES ('$ename', '$title', '$phone') ;"
     done <<< "$add"
-    zenity --info --text="Vásárló létrehozva!"
-    listen
+    zenity --info \
+    --text="Munkatárs hozzáadva!"
     else
-    zenity --info --text="Üres mező nem adható meg!"
+    zenity --info \
+    --text="Ne hagyja üresen a mezőket!"
     fi
-    listen
-}
-
-#Vásárlók kilistázása
-list_customers() {
-    unset namearray
-    unset taxarray
-    unset cityarray
-    unset addressarray
-    unset telarray
-    unset data
-    namevar=""
-    taxvar=""
-    cityvar=""
-    addressvar=""
-    telvar=""
-    custs=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c "SELECT * FROM categories")
-    while IFS='|' read -r name tax city address tel
-    do
-        namevar+="$name "
-        taxvar+="$tax "
-        cityvar+="$city "
-        addressvar+="$address "
-        telvar+="$tel "
-    done <<< "$custs"
-    read -a namearray <<< $namevar
-    read -a taxarray <<< $taxvar
-    read -a cityarray <<< $cityvar
-    read -a addressarray <<< $addressvar
-    read -a telarray <<< $telvar
-    for (( i=0; i<${#namearray[*]}; ++i)); do
-    data+=( "${namearray[$i]}" "${taxarray[$i]}" "${cityarray[$i]}" "${addressarray[$i]}" "${telarray[$i]}")
-    done
-    select=$(zenity --list --title="Kategóriák" --column="Név" --column="Adószám" \
-    --column="Város" --column="Cím" --column="Telefonszám" "${data[@]}" )
     listen
 }
 
@@ -132,8 +96,10 @@ listen() {
     6 'Kategória törlése' \
     7 'Vásárló hozzáadása' \
     8 'Vásárlók listázása' \
-    9 'Kapcsolódás távoli adatbázishoz' \
-    10 'Rendszerinformáció' --width=500 --height=500)
+    9 'Munkatárs hozzáadása' \
+    10 'Számlázás' \
+    11 'Kapcsolódás távoli adatbázishoz' \
+    12 'Rendszerinformáció' --width=500 --height=500)
     if [ "$ans" == "Kategóriák felsorolása" ]
     then
     source ./data/categories.sh
@@ -144,9 +110,11 @@ listen() {
     del_category
     elif [ "$ans" == "Vásárló hozzáadása" ]
     then
+    source ./data/customers.sh
     add_customer
     elif [ "$ans" == "Vásárlók listázása" ]
     then
+    source ./data/customers.sh
     list_customers
     elif [ "$ans" == "Termék hozzáadása" ]
     then
@@ -164,6 +132,13 @@ listen() {
     then
     source ./data/products.sh 
     list_products
+    elif [ "$ans" == "Munkatárs hozzáadása" ]
+    then
+    add_employee
+    elif [ "$ans" == "Számlázás" ]
+    then
+    source ./data/orders.sh
+    new_order
     elif [ "$ans" == "Rendszerinformáció" ]
     then
     server_info
