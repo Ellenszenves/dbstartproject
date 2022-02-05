@@ -23,8 +23,6 @@ list_category() {
     for (( i=0; i<${#idarray[*]}; ++i)); do
     data+=( "${idarray[$i]}" "${myarray[$i]}" )
     done
-#Ha rákattintunk egy kategóriára akkor az id-ját változóba mentjük, és átadjuk
-#paraméterként a termék listázásnak, hogy az adott kategória termékeit megnézhessük.
     select=$(zenity --list --title="Kategóriák" --column="ID" --column="Név" "${data[@]}" )
     if [ -n "$select" ]
     then
@@ -43,8 +41,8 @@ list_products() {
     unset data
     ezlenne=""
     idvar=""
-#Ellenőrizzük, hogy kaptunk-e paramétert, ha nem akkor mindent felsorolunk, ha igen,
-#akkor csak az adott kategóriába tartozó termékek jelennek meg.
+    cattvar=""
+    stockvar=""
     if [ -n "$1" ]
     then
     prods=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
@@ -55,8 +53,6 @@ list_products() {
     "SELECT product_name, unit_price, category_name, units_in_stock FROM products LEFT JOIN categories \
     ON products.category_id = categories.category_id")
     fi
-#Itt szétbontjuk az eredményt annyi részre, ahány rekordot lekértünk, utána
-#array-be helyezzük és összefűzzük őket, így a zenity tudja őket kezelni, és külön kiírni.
     while IFS='|' read -r namme price cat stock
     do
         ezlenne+="$price "
@@ -74,7 +70,6 @@ list_products() {
     select=$(zenity --list --title="Termékek" --column="Név" --column="Ár" --column="Kategória" --column="Készlet" "${data[@]}" \
     --width=400 --height=500)
     cutted=$(echo $select | cut -b 1-)
-#Ha duplán kattintunk egy termékre, módosíthatjuk a tulajdonságait.
     if [ -n "$select" ]
     then
     product_mod "$cutted"
@@ -227,6 +222,29 @@ add_product() {
     listen
 }
 
+#Vásárló hozzáadása
+add_customer() {
+    add=$(zenity --forms --title="Vásárló hozzáadása" \
+    --add-entry="Vásárló neve" \
+    --add-entry="Adószám" \
+    --add-entry="Város" \
+    --add-entry="Cím" \
+    --add-entry="Telefonszám")
+    if [ -n "$add" ]
+    then
+    while IFS='|' read -r name tax city address tel
+    do
+    psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+    "INSERT INTO customers (contact_name, tax, city, address, phone) VALUES ('$name', '$tax', '$city', '$address', '$tel') ;"
+    done <<< "$add"
+    zenity --info --text="Vásárló létrehozva!"
+    listen
+    else
+    zenity --info --text="Üres mező nem adható meg!"
+    fi
+    listen
+}
+
 #Távoli adatbázis elérés
 #A kapott IP bekerül a .pgpass fájlba aminek a megfelelő jogosultágokat megadjuk
 #utána környezeti változóba kerül, ezután már nem kér jelszavat sem a program, mivel az a fájlban van.
@@ -265,6 +283,7 @@ remote_server() {
     fi
 }
 
+#Pár infó a programhoz
 server_info() {
     ipvar=$(ip address show enp0s3 | grep -w "inet" | cut -c 5- | cut -d " " -f 2)
     zenity --info --text="IP cím: $ipvar \
@@ -273,6 +292,7 @@ server_info() {
     listen
 }
 
+#Kategória törlése
 del_category() {
     unset stockarray
     unset catarray
@@ -312,17 +332,18 @@ listen() {
     4 'Kategória hozzáadása' \
     5 'Kategóriák felsorolása' \
     6 'Kategória törlése' \
-    7 'Kapcsolódás távoli adatbázishoz' \
-    8 'Rendszerinformáció' --width=500 --height=500)
+    7 'Vásárló hozzáadása' \
+    8 'Kapcsolódás távoli adatbázishoz' \
+    9 'Rendszerinformáció' --width=500 --height=500)
     if [ "$ans" == "Kategóriák felsorolása" ]
     then
     list_category
     elif [ "$ans" == "Kategória törlése" ]
     then
     del_category
-    elif [ "$ans" == "Felhasználó törlése" ]
+    elif [ "$ans" == "Vásárló hozzáadása" ]
     then
-    del_user
+    add_customer
     elif [ "$ans" == "Termék hozzáadása" ]
     then
     add_product
