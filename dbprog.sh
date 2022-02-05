@@ -55,7 +55,6 @@ list_products() {
     "SELECT product_name, unit_price, category_name, units_in_stock FROM products LEFT JOIN categories \
     ON products.category_id = categories.category_id")
     fi
-    echo $prods
 #Itt szétbontjuk az eredményt annyi részre, ahány rekordot lekértünk, utána
 #array-be helyezzük és összefűzzük őket, így a zenity tudja őket kezelni, és külön kiírni.
     while IFS='|' read -r namme price cat stock
@@ -78,37 +77,66 @@ list_products() {
 #Ha duplán kattintunk egy termékre, módosíthatjuk a tulajdonságait.
     if [ -n "$select" ]
     then
-    inform=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-    "SELECT product_name, unit_price, category_name, units_in_stock FROM products LEFT JOIN categories \
-    ON products.category_id = categories.category_id WHERE product_name = '$cutted';")
-    infoprice=$(echo $inform | cut -d "|" -f 2)
-    infocat=$(echo $inform | cut -d "|" -f 3)
-    infostock=$(echo $inform | cut -d "|" -f 4)
-    egylista+=( "$cutted" "$infoprice" "$infocat" "$infostock" )
-    #atya=$(zenity --list --editable --column="Típus:" --column="Érték" "Név:" "$cutted" "Ár:" "$infoprice" "Kategória:" "$infocat" "Készlet:" "$infostock")
-    mod=$(zenity --list --title="Módosítás" --radiolist --column="ID" --column="Funkció" \
-    1 'Név' 2 'Ár' 3 'Kategória' 4 'Készlet')
-    if [ "$mod" == "Név" ]
-    then
-    namemod=$(zenity --forms --title=$cutted \
-    --add-entry="Új név")
-    elif [ "$mod" == "Ár" ]
-    then
-    pricemod=$(zenity --forms --title=$cutted \
-    --add-entry="Új Ár")
-    elif [ "$mod" == "Kategória" ]
-    then
-    catmod=$(zenity --forms --title=$cutted \
-    --add-entry="Új kategória")
-    elif [ "$mod" == "Készlet" ]
-    then
-    stockmod=$(zenity --forms --title=$cutted \
-    --add-entry="Új készlet")
-    fi
+    product_mod "$cutted"
     else
     listen
     fi
-    listen
+}
+
+#Termék tulajdonságainak módosítása
+product_mod() {
+    mod=$(zenity --list --title="Módosítás" --radiolist --column="ID" --column="Funkció" \
+    1 'Név' 2 'Ár' 3 'Kategória' 4 'Készlet')
+        if [ "$mod" == "Név" ]
+        then
+        namemod=$(zenity --forms --title=$1 \
+        --add-entry="Új név")
+            if [ -n "$namemod" ]
+            then
+            namemodded=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+            "UPDATE products SET product_name = '$namemod' WHERE product_name = '$1';")
+            zenity --info --text="Termék neve módosítva!"
+            else
+            zenity --info --text="Üresen hagyott mező!"
+            fi
+        elif [ "$mod" == "Ár" ]
+        then
+        pricemod=$(zenity --forms --title=$1 \
+        --add-entry="Új Ár")
+            if [ -n "$pricemod" ]
+            then
+            pricemodded=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+            "UPDATE products SET unit_price = '$pricemod' WHERE product_name = '$1';")
+            zenity --info --text="Termék ára módosítva!"
+            else
+            zenity --info --text="Üresen hagyott mező!"
+            fi
+        elif [ "$mod" == "Kategória" ]
+        then
+        catmod=$(zenity --forms --title=$1 \
+        --add-entry="Új kategória")
+            if [ -n "$catmod" ]
+            then
+            catmodded=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+            "UPDATE products SET category_id = '$catmod' WHERE product_name = '$1';")
+            zenity --info --text="Termék kategóriája módosítva!"
+            else
+            zenity --info --text="Üresen hagyott mező!"
+            fi
+        elif [ "$mod" == "Készlet" ]
+        then
+        stockmod=$(zenity --forms --title=$1 \
+        --add-entry="Új készlet")
+            if [ -n "$stockmod" ]
+            then
+            stockmodded=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+            "UPDATE products SET units_in_stock = '$stockmod' WHERE product_name = '$1';")
+            zenity --info --text="Termék darabszáma módosítva!"
+            else
+            zenity --info --text="Üresen hagyott mező!"
+            fi
+        fi
+list_products
 }
 
 #termék törlés
