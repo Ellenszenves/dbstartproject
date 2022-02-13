@@ -1,7 +1,7 @@
 -- Name: categories; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 
 CREATE TABLE categories (
-    category_id int NOT NULL UNIQUE,
+    category_id SERIAL,
     category_name character varying(15) NOT NULL UNIQUE,
     description text
 );
@@ -11,7 +11,7 @@ CREATE TABLE categories (
 CREATE TABLE customers (
     customer_id SERIAL,
     company_name character varying(40),
-    contact_name character varying(30),
+    contact_name character varying(30) NOT NULL UNIQUE,
     contact_title character varying(30),
     address character varying(60),
     city character varying(15),
@@ -25,7 +25,7 @@ CREATE TABLE customers (
 
 CREATE TABLE employees (
     employee_id SERIAL,
-    employee_name varchar(40) NOT NULL,
+    employee_name varchar(40) NOT NULL UNIQUE,
     title character varying(30),
     title_of_courtesy character varying(25),
     birth_date date,
@@ -83,7 +83,7 @@ CREATE TABLE orders (
 
 CREATE TABLE products (
     product_id serial,
-    product_name character varying(40) NOT NULL,
+    product_name character varying(40) NOT NULL UNIQUE,
     supplier_id smallint,
     category_id smallint,
     quantity_per_unit character varying(20),

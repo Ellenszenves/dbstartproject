@@ -16,28 +16,6 @@ help() {
     listen
 }
 
-#Eladó hozzáadása
-add_employee() {
-    add=$(zenity --forms --title="Munkatárs hozzáadása" \
-    --add-entry="Név" \
-    --add-entry="Beosztás" \
-    --add-entry="Telefonszám")
-    if [ -n "$add" ]
-    then
-    while IFS='|' read -r ename title phone
-    do
-        psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
-        "INSERT INTO employees (employee_name, title, phone) VALUES ('$ename', '$title', '$phone') ;"
-    done <<< "$add"
-    zenity --info \
-    --text="Munkatárs hozzáadva!"
-    else
-    zenity --info \
-    --text="Ne hagyja üresen a mezőket!"
-    fi
-    listen
-}
-
 #Távoli adatbázis elérés
 #A kapott IP bekerül a .pgpass fájlba aminek a megfelelő jogosultágokat megadjuk
 #utána környezeti változóba kerül, ezután már nem kér jelszavat sem a program, mivel az a fájlban van.
@@ -97,9 +75,10 @@ listen() {
     7 'Vásárló hozzáadása' \
     8 'Vásárlók listázása' \
     9 'Munkatárs hozzáadása' \
-    10 'Számlázás' \
-    11 'Kapcsolódás távoli adatbázishoz' \
-    12 'Rendszerinformáció' --width=500 --height=500)
+    10 'Munkatársak listája' \
+    11 'Számlázás' \
+    12 'Kapcsolódás távoli adatbázishoz' \
+    13 'Rendszerinformáció' --width=500 --height=500)
     if [ "$ans" == "Kategóriák felsorolása" ]
     then
     source ./data/categories.sh
@@ -134,7 +113,12 @@ listen() {
     list_products
     elif [ "$ans" == "Munkatárs hozzáadása" ]
     then
+    source ./data/employee.sh
     add_employee
+    elif [ "$ans" == "Munkatársak listája" ]
+    then
+    source ./data/employee.sh
+    list_employee
     elif [ "$ans" == "Számlázás" ]
     then
     source ./data/orders.sh
