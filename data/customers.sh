@@ -62,5 +62,61 @@ modify_customer() {
 }
 
 del_customer() {
-    zenity --info --text="Itt lesz a vásárló törlés funkció."
+    unset namearray
+    unset taxarray
+    unset cityarray
+    unset addressarray
+    unset telarray
+    unset data
+    namevar=""
+    taxvar=""
+    cityvar=""
+    addressvar=""
+    telvar=""
+    custs=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c "SELECT contact_name, tax, city, address, phone FROM customers")
+    while IFS='|' read -r name tax city address tel
+    do
+        namevar+="$name|"
+        taxvar+="$tax "
+        cityvar+="$city|"
+        addressvar+="$address|"
+        telvar+="$tel|"
+    done <<< "$custs"
+    IFS="|" read -a namearray <<< $namevar
+    read -a taxarray <<< $taxvar
+    IFS="|" read -a cityarray <<< $cityvar
+    IFS="|" read -a addressarray <<< $addressvar
+    IFS="|" read -a telarray <<< $telvar
+    for (( i=0; i<${#namearray[*]}; ++i)); do
+    data+=( "${namearray[$i]}" "${taxarray[$i]}" "${cityarray[$i]}" "${addressarray[$i]}" "${telarray[$i]}")
+    done
+    select=$(zenity --list --title="Vásárlók" --column="Név" --column="Adószám" \
+    --column="Város" --column="Cím" --column="Telefonszám" "${data[@]}" --height=400 --width=700 )
+    if [ -n "$select" ]
+    then
+    inform=$(psql -t -h $IP_db -p 15432 -U $db_user -d $db_name -c \
+    "DELETE FROM customers WHERE contact_name='$select'";)
+    zenity --info \
+    --text="Vásárló törölve!"
+    fi
+    listen
+}
+
+menu() {
+    ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció" \
+    1 'Vásárló hozzáadása' \
+    2 'Vásárlók listája' \
+    3 'Vásárló törlése' )
+    if [ "$ans" == "Vásárló hozzáadása" ]
+    then
+    add_customer
+    elif [ "$ans" == "Vásárlók listája" ]
+    then
+    list_customers
+    elif [ "$ans" == "Vásárló törlése" ]
+    then
+    del_customer
+    else
+    listen
+    fi
 }

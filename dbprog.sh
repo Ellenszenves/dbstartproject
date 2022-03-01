@@ -66,63 +66,33 @@ server_info() {
 #Főmenü
 listen() {
     ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció" \
-    1 'Termék hozzáadása' \
-    2 'Termékek felsorolása' \
-    3 'Termék törlése' \
-    4 'Kategória hozzáadása' \
-    5 'Kategóriák felsorolása' \
-    6 'Kategória törlése' \
-    7 'Vásárló hozzáadása' \
-    8 'Vásárlók listázása' \
-    9 'Munkatárs hozzáadása' \
-    10 'Munkatársak listája' \
-    11 'Számlázás' \
-    12 'Kapcsolódás távoli adatbázishoz' \
-    13 'Rendszerinformáció' --width=500 --height=500)
-    if [ "$ans" == "Kategóriák felsorolása" ]
+    1 'Termékek' \
+    2 'Kategóriák' \
+    5 'Vásárlók' \
+    7 'Munkatársak' \
+    8 'Számlázás' \
+    9 'Kapcsolódás távoli adatbázishoz' \
+    10 'Rendszerinformáció' --width=500 --height=500)
+    if [ "$ans" == "Termékek" ]
+    then
+    source ./data/products.sh
+    menu
+    elif [ "$ans" == "Kategóriák" ]
     then
     source ./data/categories.sh
-    list_category
-    elif [ "$ans" == "Kategória törlése" ]
-    then
-    source ./data/categories.sh
-    del_category
-    elif [ "$ans" == "Vásárló hozzáadása" ]
+    menu
+    elif [ "$ans" == "Vásárlók" ]
     then
     source ./data/customers.sh
-    add_customer
-    elif [ "$ans" == "Vásárlók listázása" ]
-    then
-    source ./data/customers.sh
-    list_customers
-    elif [ "$ans" == "Termék hozzáadása" ]
-    then
-    source ./data/products.sh 
-    add_product
-    elif [ "$ans" == "Kategória hozzáadása" ]
-    then
-    source ./data/categories.sh
-    add_category
-    elif [ "$ans" == "Termék törlése" ]
-    then
-    source ./data/products.sh 
-    del_product
-    elif [ "$ans" == "Termékek felsorolása" ]
-    then
-    source ./data/products.sh 
-    list_products
-    elif [ "$ans" == "Munkatárs hozzáadása" ]
+    menu
+    elif [ "$ans" == "Munkatársak" ]
     then
     source ./data/employee.sh
-    add_employee
-    elif [ "$ans" == "Munkatársak listája" ]
-    then
-    source ./data/employee.sh
-    list_employee
+    menu
     elif [ "$ans" == "Számlázás" ]
     then
     source ./data/orders.sh
-    new_order
+    menu
     elif [ "$ans" == "Rendszerinformáció" ]
     then
     server_info

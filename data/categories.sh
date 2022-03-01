@@ -80,3 +80,22 @@ del_category() {
     fi
     listen
 }
+
+menu() {
+    ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció" \
+    1 'Kategória hozzáadása' \
+    2 'Kategóriák listája' \
+    3 'Kategória törlése' )
+    if [ "$ans" == "Kategória hozzáadása" ]
+    then
+    add_category
+    elif [ "$ans" == "Kategóriák listája" ]
+    then
+    list_category
+    elif [ "$ans" == "Kategória törlése" ]
+    then
+    del_category
+    else
+    listen
+    fi
+}

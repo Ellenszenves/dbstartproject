@@ -68,15 +68,8 @@ CREATE TABLE orders (
     employee_id smallint,
     order_date date,
     required_date date,
-    shipped_date date,
-    ship_via smallint,
-    freight real,
-    ship_name character varying(40),
-    ship_address character varying(60),
-    ship_city character varying(15),
-    ship_region character varying(15),
-    ship_postal_code character varying(10),
-    ship_country character varying(15)
+    company_id int,
+    order_status varchar(8)
 );
 
 -- Name: products; Type: TABLE; Schema: public; Owner: -; Tablespace: 
@@ -150,3 +143,16 @@ CREATE TABLE teszt (
 );
 
 INSERT INTO teszt VALUES ('aaaaa');
+
+CREATE TABLE company (
+    comp_id SERIAL,
+    comp_name varchar(30),
+    comp_city varchar(20),
+    comp_address varchar(50),
+    comp_phone varchar(20),
+    comp_country varchar(30),
+    comp_zipcode varchar(10)
+);
+
+INSERT INTO company (comp_name, comp_city, comp_address, comp_phone, comp_country, comp_zipcode) 
+VALUES ('Teszt kft.', 'Makó', 'Teszt utca 16.', '06301234567', 'Magyarország', '6900');

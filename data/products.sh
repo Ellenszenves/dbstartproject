@@ -162,3 +162,26 @@ del_product() {
     fi
     listen
 }
+
+menu() {
+    ans=$(zenity --list --title "Menü" --radiolist --column "ID" --column="Funkció" \
+    1 'Termék hozzáadása' \
+    2 'Termékek listája' \
+    3 'Termék módosítása' \
+    4 'Termék törlése' )
+    if [ "$ans" == "Termék hozzáadása" ]
+    then
+    add_product
+    elif [ "$ans" == "Termékek listája" ]
+    then
+    list_products
+    elif [ "$ans" == "Termék módosítása" ]
+    then
+    product_mod
+    elif [ "$ans" == "Termék törlése" ]
+    then
+    del_product
+    else
+    listen
+    fi
+}
